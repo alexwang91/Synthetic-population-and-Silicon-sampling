@@ -37,13 +37,12 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Runs deterministic choice baselines** - creates discrete choice rows from enriched personas and normalized scenarios before any LLM interview layer.
 - **Runs full scenario pipelines** - wires the audited steps together from config and writes a manifest with step commands, outputs, and scientific boundaries.
 - **Generates concise market reports** - summarizes audit status, weighted choice shares, uncertainty intervals, drivers, barriers, and limitations without copying row-level data.
+- **Validates pipeline artifacts** - checks that required run outputs exist, JSON audits parse, critical pass flags are true, and reports stay compact.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
-- **Supports three depth tiers** - 10,000 shallow records for statistics, 1,000 medium interviews for reason distribution, and 100 deep cases for story work.
-- **Checks isolation and contamination** - validates that respondent rows do not leak aggregate shares, quotas, or other respondents into the answer.
 - **Reports uncertainty** - bootstraps weighted choices and segment lift instead of presenting single-number claims.
-- **Keeps claims auditable** - records source metadata, imputation limits, calibration level, and validation outputs.
+- **Keeps claims auditable** - records source metadata, imputation limits, calibration level, validation outputs, and final acceptance checks.
 
 ## How It Works
 
@@ -88,6 +87,7 @@ choice_results.jsonl
         +--> validation: schema, isolation, confidence, contamination
         +--> bootstrap: intervals and segment lift
         +--> concise report: market_report.md / market_report.json
+        +--> final acceptance: pipeline_artifact_validation.json
         +--> optional LLM interview explanation layer
 ```
 
@@ -101,7 +101,7 @@ The prototype uses only the Python standard library.
 
 ```powershell
 # Run the full deterministic Serbia smartwatch demo pipeline from config.
-# This emits manifest.json, choice_results.jsonl, bootstrap_intervals.json, market_report.md, and market_report.json.
+# This emits manifest.json, choice_results.jsonl, bootstrap_intervals.json, market_report.md, market_report.json, and pipeline_artifact_validation.json.
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py `
   skills\weighted-persona-pricing\examples\serbia_smartwatch_pipeline_config.json `
   --output-root runs
@@ -109,6 +109,11 @@ python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py `
 # Regenerate the concise report from an existing run manifest
 python skills\weighted-persona-pricing\scripts\generate_market_report.py `
   runs\serbia_smartwatch_pipeline_demo\manifest.json
+
+# Validate a completed run folder before treating it as deliverable
+python skills\weighted-persona-pricing\scripts\validate_pipeline_artifacts.py `
+  runs\serbia_smartwatch_pipeline_demo\manifest.json `
+  --audit runs\serbia_smartwatch_pipeline_demo\pipeline_artifact_validation.json
 
 # Build a generic country-pack skeleton
 python skills\country-pack-builder\scripts\build_country_pack.py `
@@ -175,7 +180,7 @@ python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py `
   --audit runs\serbia-demo\choice_interview_validation.json `
   --require-controls
 
-# Run country-pack, enrichment, scenario, choice, pipeline, and report unit tests
+# Run country-pack, enrichment, scenario, choice, pipeline, report, and acceptance unit tests
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
 python tests\test_sample_persona_skeletons.py
@@ -184,6 +189,7 @@ python tests\test_validate_persona_coherence.py
 python tests\test_product_scenario_normalizer.py
 python tests\test_run_choice_model.py
 python tests\test_run_scenario_pipeline.py
+python tests\test_validate_pipeline_artifacts.py
 
 # Validate the existing interview contract tests
 python tests\test_choice_interview_validator.py
@@ -202,7 +208,7 @@ Use the skills from an agent:
 
 ```text
 Use $country-pack-builder to build or audit a country statistical data pack before panel generation.
-Use $weighted-persona-pricing to evaluate a country/category/product/competitor scenario with isolated synthetic respondents, segment lift, confidence intervals, and audit notes.
+Use $weighted-persona-pricing to evaluate a country/category/product/competitor scenario with isolated synthetic respondents, segment lift, confidence intervals, audit notes, concise report, and final artifact validation.
 ```
 
 ## Proof
@@ -248,6 +254,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/weighted-persona-pricing/scripts/run_choice_model.py`](skills/weighted-persona-pricing/scripts/run_choice_model.py) | Deterministic rule-based random-utility choice baseline |
 | [`skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py`](skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py) | End-to-end deterministic scenario pipeline runner |
 | [`skills/weighted-persona-pricing/scripts/generate_market_report.py`](skills/weighted-persona-pricing/scripts/generate_market_report.py) | Concise market report generator from pipeline manifest |
+| [`skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py`](skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py) | Final run-folder acceptance validator |
 | [`skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json`](skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json) | Example A/B smartwatch scenario |
 | [`skills/weighted-persona-pricing/examples/serbia_smartwatch_pipeline_config.json`](skills/weighted-persona-pricing/examples/serbia_smartwatch_pipeline_config.json) | Example full pipeline config |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
