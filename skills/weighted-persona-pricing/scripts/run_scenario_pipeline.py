@@ -161,6 +161,7 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "bootstrap_intervals": run_dir / "bootstrap_intervals.json",
         "market_report_md": run_dir / "market_report.md",
         "market_report_json": run_dir / "market_report.json",
+        "pipeline_artifact_validation": run_dir / "pipeline_artifact_validation.json",
     }
 
     steps: list[dict[str, Any]] = []
@@ -203,6 +204,11 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         if add_step("generate_market_report", [py, str(script_path("skills/weighted-persona-pricing/scripts/generate_market_report.py")), str(run_dir / "manifest.json"), "--output-md", str(outputs["market_report_md"]), "--output-json", str(outputs["market_report_json"]), "--max-reasons", str(config.get("report_max_reasons", 5)), "--max-artifacts", str(config.get("report_max_artifacts", 18))]):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
         manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+
+    if config.get("validate_artifacts", True):
+        if add_step("validate_pipeline_artifacts", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py")), str(run_dir / "manifest.json"), "--audit", str(outputs["pipeline_artifact_validation"]), "--max-report-lines", str(config.get("max_report_lines", 120))]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
     return manifest
 
 
@@ -240,6 +246,7 @@ def finalize_manifest(
             "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
             "provenance_policy": "all major intermediate artifacts and audit files are retained",
             "report_policy": "market_report.md is concise by default; large row-level artifacts stay in JSON/JSONL files",
+            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and report length",
             "limitations": [
                 "The pipeline orchestrates deterministic components and does not make outputs decision-grade.",
                 "Country pack quality and margin validity determine the statistical credibility of generated personas.",
@@ -269,6 +276,7 @@ def parse_args() -> argparse.Namespace:
         "validate_choice_interviews",
         "bootstrap_choice_intervals",
         "generate_market_report",
+        "validate_pipeline_artifacts",
     ])
     return parser.parse_args()
 
