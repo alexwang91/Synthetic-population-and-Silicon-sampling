@@ -33,7 +33,7 @@ BASE_REQUIRED_OUTPUT_KEYS = [
 ]
 ENGINE_REQUIRED_OUTPUT_KEYS = {
     "rule_based_baseline": ["choice_model_audit"],
-    "llm_short_all": ["llm_choice_prompts", "llm_choice_prompt_audit", "llm_choice_interview_audit"],
+    "llm_short_all": ["llm_choice_prompts", "llm_choice_prompt_audit", "llm_choice_interview_audit", "llm_choice_quality_audit"],
 }
 JSON_OUTPUT_KEYS = [
     "ipf_audit",
@@ -44,6 +44,7 @@ JSON_OUTPUT_KEYS = [
     "choice_model_audit",
     "llm_choice_prompt_audit",
     "llm_choice_interview_audit",
+    "llm_choice_quality_audit",
     "choice_interview_validation",
     "bootstrap_intervals",
     "market_report_json",
@@ -140,6 +141,8 @@ def check_manifest(manifest: dict[str, Any], manifest_path: Path, sink: IssueSin
         sink.warning("missing_token_policy")
     if not boundary.get("original_plan_alignment"):
         sink.warning("missing_original_plan_alignment")
+    if not boundary.get("llm_risk_controls"):
+        sink.warning("missing_llm_risk_controls")
     limitations = boundary.get("limitations")
     if not isinstance(limitations, list) or not limitations:
         sink.warning("missing_scientific_limitations")
@@ -212,6 +215,11 @@ def check_audits(manifest: dict[str, Any], artifacts: dict[str, dict[str, Any]],
             sink.warning("llm_choice_interview_coverage_below_one", coverage_rate=llm_audit.get("coverage_rate"))
         if llm_audit and llm_audit.get("response_count", 0) <= 0:
             sink.error("llm_choice_interview_has_no_responses", response_count=llm_audit.get("response_count"))
+        quality = artifacts.get("llm_choice_quality_audit", {})
+        if quality and quality.get("passes_llm_choice_quality_validation") is not True:
+            sink.error("llm_choice_quality_failed", errors=quality.get("error_count"), warnings=quality.get("warning_count"))
+        if quality and isinstance(quality.get("warning_count"), int) and quality["warning_count"] > 0:
+            sink.warning("llm_choice_quality_has_warnings", warning_count=quality["warning_count"])
 
     report = artifacts.get("market_report_json", {})
     if report and not report.get("choice_shares"):
