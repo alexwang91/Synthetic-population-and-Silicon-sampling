@@ -1,6 +1,6 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
@@ -15,6 +15,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Soft trait expander: `skills/weighted-persona-pricing/scripts/expand_soft_traits.py`
 - Persona coherence validator: `skills/weighted-persona-pricing/scripts/validate_persona_coherence.py`
 - Product scenario normalizer: `skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py`
+- Deterministic choice baseline: `skills/weighted-persona-pricing/scripts/run_choice_model.py`
 - Weighted persona pricing skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
 - Interview QA rules: `skills/weighted-persona-pricing/references/interview-quality-controls.md`
 - Product scenario workflow: `skills/weighted-persona-pricing/references/product-scenario-workflow.md`
@@ -32,6 +33,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Use `expand_soft_traits.py` to initialize inferred media, shopping, psychographic, and category priors; it is deterministic and does not call an LLM.
 - Use `validate_persona_coherence.py` before choice simulation; errors block the run, warnings identify unusual but possibly valid combinations.
 - Use `product_scenario_normalizer.py` to create finite CBC-style choice sets with mutually exclusive alternatives and an outside option before any choice model.
+- Use `run_choice_model.py` as an uncalibrated rule-based random-utility baseline only; utilities and probabilities are diagnostics, while the row-level output must remain a discrete choice.
 - Person-level output must be a discrete `choice`, not only probabilities.
 - Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
 - LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
@@ -49,12 +51,15 @@ python skills\country-pack-builder\scripts\sample_persona_skeletons.py runs\serb
 python skills\weighted-persona-pricing\scripts\expand_soft_traits.py runs\serbia-demo\personas_core.jsonl --category smartwatch --category-price-index 0.7 --output runs\serbia-demo\personas_enriched.jsonl --audit runs\serbia-demo\soft_trait_audit.json
 python skills\weighted-persona-pricing\scripts\validate_persona_coherence.py runs\serbia-demo\personas_enriched.jsonl --audit runs\serbia-demo\persona_coherence_audit.json
 python skills\weighted-persona-pricing\scripts\product_scenario_normalizer.py skills\weighted-persona-pricing\examples\smartwatch_product_scenario.json --output runs\serbia-demo\normalized_choice_scenario.json --audit runs\serbia-demo\product_scenario_audit.json
+python skills\weighted-persona-pricing\scripts\run_choice_model.py runs\serbia-demo\personas_enriched.jsonl runs\serbia-demo\normalized_choice_scenario.json --output runs\serbia-demo\choice_results.jsonl --audit runs\serbia-demo\choice_model_audit.json
+python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\serbia-demo\choice_results.jsonl --audit runs\serbia-demo\choice_interview_validation.json --require-controls
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
 python tests\test_sample_persona_skeletons.py
 python tests\test_expand_soft_traits.py
 python tests\test_validate_persona_coherence.py
 python tests\test_product_scenario_normalizer.py
+python tests\test_run_choice_model.py
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
