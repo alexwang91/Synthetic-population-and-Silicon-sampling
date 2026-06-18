@@ -28,6 +28,8 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 ## What It Does
 
 - **Builds country data packs** - separates official margins, survey priors, imputed fields, missing tables, calibration levels, and IPF readiness.
+- **Creates seed statistical cells** - turns an audited country pack plus explicit dimensions into a seed grid for raking.
+- **Runs IPF/raking** - fits seed cells to supplied official or survey margin targets and writes weighted cells.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -43,6 +45,12 @@ Country/product scenario
         |
         v
 Country pack: sources + constraints + missing tables
+        |
+        v
+Seed statistical cells
+        |
+        v
+IPF/raking to official or survey margins
         |
         v
 Statistical skeletons + weights
@@ -80,8 +88,23 @@ python skills\country-pack-builder\scripts\build_country_pack.py `
 python skills\country-pack-builder\scripts\validate_country_pack.py `
   skills\country-pack-builder\examples\RS_country_pack_v0_1.json
 
+# Create demo seed cells from explicit dimensions
+python skills\country-pack-builder\scripts\country_pack_to_cells.py `
+  skills\country-pack-builder\examples\RS_country_pack_v0_1.json `
+  --dimension region=Belgrade,Vojvodina `
+  --dimension sex=male,female `
+  --output runs\serbia-demo\seed_cells.jsonl
+
+# Fit seed cells to a margin JSON file
+python skills\country-pack-builder\scripts\run_ipf.py `
+  runs\serbia-demo\seed_cells.jsonl `
+  runs\serbia-demo\margins.json `
+  --output runs\serbia-demo\weighted_cells.jsonl `
+  --audit runs\serbia-demo\ipf_audit.json
+
 # Run country-pack unit tests
 python tests\test_country_pack_builder.py
+python tests\test_country_pack_ipf_pipeline.py
 
 # Validate the choice interview contract
 python tests\test_choice_interview_validator.py
@@ -135,6 +158,8 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/country-pack-builder/schemas/country_pack.schema.json`](skills/country-pack-builder/schemas/country_pack.schema.json) | JSON schema for combined country pack files |
 | [`skills/country-pack-builder/scripts/build_country_pack.py`](skills/country-pack-builder/scripts/build_country_pack.py) | Generic country pack skeleton generator |
 | [`skills/country-pack-builder/scripts/validate_country_pack.py`](skills/country-pack-builder/scripts/validate_country_pack.py) | Country pack structure and audit-readiness validator |
+| [`skills/country-pack-builder/scripts/country_pack_to_cells.py`](skills/country-pack-builder/scripts/country_pack_to_cells.py) | Seed statistical cell generator |
+| [`skills/country-pack-builder/scripts/run_ipf.py`](skills/country-pack-builder/scripts/run_ipf.py) | Iterative proportional fitting / raking over seed cells |
 | [`skills/country-pack-builder/examples/RS_country_pack_v0_1.json`](skills/country-pack-builder/examples/RS_country_pack_v0_1.json) | Serbia anchor-ready example pack |
 | [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Weighted persona pricing skill entrypoint |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
