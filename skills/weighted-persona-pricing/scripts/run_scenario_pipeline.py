@@ -186,6 +186,7 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "bootstrap_intervals": run_dir / "bootstrap_intervals.json",
         "market_report_md": run_dir / "market_report.md",
         "market_report_json": run_dir / "market_report.json",
+        "dashboard_data": run_dir / "dashboard_data.json",
         "pipeline_artifact_validation": run_dir / "pipeline_artifact_validation.json",
     }
 
@@ -266,6 +267,11 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
         manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
 
+    if config.get("generate_dashboard_data", True):
+        if add_step("generate_dashboard_data", [py, str(script_path("skills/weighted-persona-pricing/scripts/generate_dashboard_data.py")), str(run_dir / "manifest.json"), "--output", str(outputs["dashboard_data"]), "--max-reasons", str(config.get("dashboard_max_reasons", 12)), "--max-artifacts", str(config.get("dashboard_max_artifacts", 40))]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+
     if config.get("validate_artifacts", True):
         if add_step("validate_pipeline_artifacts", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py")), str(run_dir / "manifest.json"), "--audit", str(outputs["pipeline_artifact_validation"]), "--max-report-lines", str(config.get("max_report_lines", 0))]):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
@@ -308,66 +314,3 @@ def finalize_manifest(
         "outputs": {key: str(value) for key, value in outputs.items() if value.exists()},
         "steps": steps,
         "scientific_boundary": {
-            "pipeline_changes_model_outputs": False,
-            "choice_model_calibration_level": "uncalibrated_rule_based_baseline" if interview_engine == "rule_based_baseline" else "synthetic_llm_respondent_uncalibrated",
-            "provenance_policy": "all major intermediate artifacts and audit files are retained",
-            "report_policy": "market_report.md is an optional summary surface; complete dashboard data stays in JSON/JSONL artifacts",
-            "token_policy": "llm_short_all may ask every selected representative persona one short isolated choice prompt; never summarize all raw row-level interviews in one LLM prompt",
-            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and optional report-length warnings",
-            "original_plan_alignment": "representative weighted respondents each produce a discrete choice; rule_based_baseline is only an auxiliary baseline, while llm_short_all is the intended synthetic respondent mode",
-            "llm_risk_controls": [
-                "explicit canonical choice labels independent of presented order",
-                "deterministic alternative-order counterbalancing",
-                "prompt variant recorded for robustness analysis",
-                "LLM choice quality validation checks variance compression, subgroup differentiation, and order sensitivity",
-            ],
-            "limitations": [
-                "Country pack quality and margin validity determine the statistical credibility of generated personas.",
-                "Rule-based choices are for development, CI, and comparison; they are not the intended final synthetic respondent simulator.",
-                "LLM short-choice rows are synthetic respondent outputs, not observed consumer behavior.",
-                "Decision-grade accuracy requires calibration against CBC, survey, sales, clickstream, or experiment data.",
-            ],
-        },
-    }
-    write_json(run_dir / "manifest.json", manifest)
-    return manifest
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("config", type=Path)
-    parser.add_argument("--output-root", type=Path, default=Path("runs"))
-    parser.add_argument("--manifest", type=Path)
-    parser.add_argument("--stop-after", choices=[
-        "validate_country_pack",
-        "country_pack_to_cells",
-        "run_ipf",
-        "sample_persona_skeletons",
-        "expand_soft_traits",
-        "validate_persona_coherence",
-        "product_scenario_normalizer",
-        "run_choice_model",
-        "export_llm_choice_prompts",
-        "normalize_llm_choice_responses",
-        "validate_choice_interviews",
-        "validate_llm_choice_quality",
-        "bootstrap_choice_intervals",
-        "generate_market_report",
-        "validate_pipeline_artifacts",
-    ])
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    config_path = args.config.resolve()
-    config = load_json(config_path)
-    manifest = pipeline(config, config_path=config_path, output_root=args.output_root, stop_after=args.stop_after)
-    if args.manifest:
-        write_json(args.manifest, manifest)
-    print(json.dumps({"run_id": manifest["run_id"], "status": manifest["status"], "manifest": str(Path(args.output_root) / manifest["run_id"] / "manifest.json")}, ensure_ascii=False, indent=2))
-    return 0 if manifest["status"] in {"passed", "stopped", "awaiting_llm_responses"} else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
