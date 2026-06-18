@@ -181,6 +181,7 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "llm_choice_prompts": run_dir / "llm_choice_prompts.jsonl",
         "llm_choice_prompt_audit": run_dir / "llm_choice_prompt_audit.json",
         "llm_choice_interview_audit": run_dir / "llm_choice_interview_audit.json",
+        "llm_choice_quality_audit": run_dir / "llm_choice_quality_audit.json",
         "choice_interview_validation": run_dir / "choice_interview_validation.json",
         "bootstrap_intervals": run_dir / "bootstrap_intervals.json",
         "market_report_md": run_dir / "market_report.md",
@@ -228,6 +229,10 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
             str(outputs["llm_choice_prompts"]),
             "--audit",
             str(outputs["llm_choice_prompt_audit"]),
+            "--order-policy",
+            str(config.get("llm_order_policy", "rotate")),
+            "--prompt-variant",
+            str(config.get("llm_prompt_variant", "tradeoff")),
         ]
         if config.get("llm_prompt_limit"):
             export_command.extend(["--limit", str(config["llm_prompt_limit"])])
@@ -245,6 +250,10 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
 
     if add_step("validate_choice_interviews", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_choice_interviews.py")), str(outputs["choice_results"]), "--audit", str(outputs["choice_interview_validation"]), "--require-controls"]):
         return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+
+    if interview_engine == "llm_short_all" and config.get("validate_llm_choice_quality", True):
+        if add_step("validate_llm_choice_quality", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_llm_choice_quality.py")), str(outputs["personas_enriched"]), str(outputs["choice_results"]), "--audit", str(outputs["llm_choice_quality_audit"]), "--subgroup-fields", str(config.get("llm_quality_subgroup_fields", "region,sex,education_level,income_decile,settlement_type,employment_status"))]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
 
     bootstrap_iterations = int(config.get("bootstrap_iterations", 120))
     if bootstrap_iterations > 0:
@@ -293,6 +302,8 @@ def finalize_manifest(
             "category": config["category"],
             "category_price_index": config["category_price_index"],
             "llm_response_file": config.get("llm_response_file"),
+            "llm_order_policy": config.get("llm_order_policy", "rotate"),
+            "llm_prompt_variant": config.get("llm_prompt_variant", "tradeoff"),
         },
         "outputs": {key: str(value) for key, value in outputs.items() if value.exists()},
         "steps": steps,
@@ -304,6 +315,12 @@ def finalize_manifest(
             "token_policy": "llm_short_all may ask every selected representative persona one short isolated choice prompt; never summarize all raw row-level interviews in one LLM prompt",
             "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and optional report-length warnings",
             "original_plan_alignment": "representative weighted respondents each produce a discrete choice; rule_based_baseline is only an auxiliary baseline, while llm_short_all is the intended synthetic respondent mode",
+            "llm_risk_controls": [
+                "explicit canonical choice labels independent of presented order",
+                "deterministic alternative-order counterbalancing",
+                "prompt variant recorded for robustness analysis",
+                "LLM choice quality validation checks variance compression, subgroup differentiation, and order sensitivity",
+            ],
             "limitations": [
                 "Country pack quality and margin validity determine the statistical credibility of generated personas.",
                 "Rule-based choices are for development, CI, and comparison; they are not the intended final synthetic respondent simulator.",
@@ -333,6 +350,7 @@ def parse_args() -> argparse.Namespace:
         "export_llm_choice_prompts",
         "normalize_llm_choice_responses",
         "validate_choice_interviews",
+        "validate_llm_choice_quality",
         "bootstrap_choice_intervals",
         "generate_market_report",
         "validate_pipeline_artifacts",
