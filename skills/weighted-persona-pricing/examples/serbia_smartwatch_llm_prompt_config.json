@@ -52,6 +52,12 @@
   "generate_dashboard_data": true,
   "dashboard_max_reasons": 12,
   "dashboard_max_artifacts": 40,
+  "dashboard_max_archetypes": 8,
+  "dashboard_max_segments": 250,
+  "dashboard_max_reason_segments": 80,
+  "dashboard_min_segment_support": 10,
+  "dashboard_medium_sample_size": 1000,
+  "dashboard_deep_sample_size": 100,
   "validate_artifacts": true,
   "max_report_lines": 0
 }
