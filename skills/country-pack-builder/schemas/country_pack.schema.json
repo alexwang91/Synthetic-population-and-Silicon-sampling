@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CountryPack",
+  "type": "object",
+  "required": [
+    "country_identity",
+    "coverage_scope",
+    "source_priority",
+    "required_tables",
+    "optional_tables",
+    "extracted_anchor_values",
+    "statistical_constraints",
+    "imputation_policy",
+    "quality_checks",
+    "build_status",
+    "next_actions"
+  ],
+  "properties": {
+    "country_identity": {
+      "type": "object",
+      "required": ["country_name", "iso2", "iso3", "pack_version", "population_year"],
+      "properties": {
+        "country_name": {"type": "string"},
+        "iso2": {"type": "string", "minLength": 2, "maxLength": 2},
+        "iso3": {"type": "string", "minLength": 3, "maxLength": 3},
+        "pack_version": {"type": "string"},
+        "population_year": {"type": ["integer", "string"]},
+        "preferred_language": {"type": "string"},
+        "local_languages": {"type": "array", "items": {"type": "string"}},
+        "currency": {"type": "string"},
+        "build_date": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "coverage_scope": {
+      "type": "object",
+      "required": ["target_population"],
+      "properties": {
+        "target_population": {"type": "string"},
+        "base_population_reference": {"type": "object"},
+        "use_case": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "source_priority": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rank", "source_type", "source_name"],
+        "properties": {
+          "rank": {"type": "integer"},
+          "source_type": {"type": "string"},
+          "source_name": {"type": "string"},
+          "source_url": {"type": "string"},
+          "use_for": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "required_tables": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/table"}
+    },
+    "optional_tables": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/table"}
+    },
+    "extracted_anchor_values": {"type": "object"},
+    "statistical_constraints": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/constraint"}
+    },
+    "imputation_policy": {"type": "object"},
+    "quality_checks": {"type": "object"},
+    "build_status": {
+      "type": "object",
+      "required": ["status", "can_generate_demo_panel", "can_claim_census_calibrated_panel"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["empty", "source_mapped", "anchor_ready", "ipf_ready", "calibrated_ready", "partial_country_pack_v0_1"]
+        },
+        "current_calibration_level": {"type": "string"},
+        "can_generate_demo_panel": {"type": "boolean"},
+        "can_claim_census_calibrated_panel": {"type": "boolean"},
+        "reason_census_claim_not_ready": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "next_actions": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "table": {
+      "type": "object",
+      "required": [
+        "file_name",
+        "grain",
+        "variables",
+        "source_name",
+        "official_or_imputed",
+        "required_for_level",
+        "missing_status"
+      ],
+      "properties": {
+        "file_name": {"type": "string"},
+        "grain": {"type": "string"},
+        "variables": {"type": "array", "items": {"type": "string"}},
+        "source_name": {"type": "string"},
+        "source_url": {"type": "string"},
+        "source_year": {"type": ["integer", "string"]},
+        "coverage_note": {"type": "string"},
+        "official_or_imputed": {"type": "string"},
+        "required_for_level": {"type": "string"},
+        "missing_status": {"type": "string"},
+        "comments": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "constraint": {
+      "type": "object",
+      "required": [
+        "constraint_id",
+        "type",
+        "variable_set",
+        "values_available",
+        "geography_level",
+        "population_base",
+        "year",
+        "confidence",
+        "use_in_ipf"
+      ],
+      "properties": {
+        "constraint_id": {"type": "string"},
+        "type": {
+          "type": "string",
+          "enum": ["official_margin", "survey_margin", "derived_margin", "imputed_prior", "unavailable"]
+        },
+        "variable_set": {"type": "array", "items": {"type": "string"}},
+        "values_available": {"type": "boolean"},
+        "geography_level": {"type": "string"},
+        "population_base": {"type": "string"},
+        "year": {"type": ["integer", "string"]},
+        "source": {"type": "string"},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+        "use_in_ipf": {"type": "boolean"},
+        "warning_if_used": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
