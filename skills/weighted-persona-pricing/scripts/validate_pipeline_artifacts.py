@@ -30,6 +30,7 @@ BASE_REQUIRED_OUTPUT_KEYS = [
     "bootstrap_intervals",
     "market_report_md",
     "market_report_json",
+    "dashboard_data",
 ]
 ENGINE_REQUIRED_OUTPUT_KEYS = {
     "rule_based_baseline": ["choice_model_audit"],
@@ -48,6 +49,7 @@ JSON_OUTPUT_KEYS = [
     "choice_interview_validation",
     "bootstrap_intervals",
     "market_report_json",
+    "dashboard_data",
 ]
 
 
@@ -226,6 +228,11 @@ def check_audits(manifest: dict[str, Any], artifacts: dict[str, dict[str, Any]],
         sink.warning("market_report_missing_choice_shares")
     if report and not report.get("limitations"):
         sink.warning("market_report_missing_limitations")
+    dashboard = artifacts.get("dashboard_data", {})
+    if dashboard and not isinstance(dashboard.get("quality"), dict):
+        sink.warning("dashboard_data_missing_quality_section")
+    if dashboard and not isinstance(dashboard.get("results"), dict):
+        sink.warning("dashboard_data_missing_results_section")
 
 
 def check_report(outputs: dict[str, Path], max_report_lines: int, sink: IssueSink) -> None:
