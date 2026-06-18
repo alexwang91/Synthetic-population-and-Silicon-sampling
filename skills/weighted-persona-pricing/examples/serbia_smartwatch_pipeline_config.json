@@ -1,0 +1,43 @@
+{
+  "run_id": "serbia_smartwatch_pipeline_demo",
+  "country_pack": "skills/country-pack-builder/examples/RS_country_pack_v0_1.json",
+  "dimensions": {
+    "region": ["Belgrade", "Vojvodina"],
+    "sex": ["male", "female"],
+    "education_level": ["secondary", "tertiary"],
+    "income_decile": ["3", "8"],
+    "settlement_type": ["urban", "rural"],
+    "employment_status": ["employed", "unemployed"]
+  },
+  "margins_inline": {
+    "separator": "|",
+    "margins": [
+      {
+        "name": "region",
+        "variables": ["region"],
+        "targets": {
+          "Belgrade": 60.0,
+          "Vojvodina": 40.0
+        }
+      },
+      {
+        "name": "sex",
+        "variables": ["sex"],
+        "targets": {
+          "male": 45.0,
+          "female": 55.0
+        }
+      }
+    ]
+  },
+  "sample_size": 40,
+  "product_scenario": "skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json",
+  "category": "smartwatch",
+  "category_price_index": 0.7,
+  "ipf_iterations": 50,
+  "ipf_tolerance": 1e-9,
+  "choice_mode": "argmax",
+  "choice_temperature": 0.35,
+  "bootstrap_iterations": 30,
+  "bootstrap_seed": 20260618
+}
