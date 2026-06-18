@@ -206,7 +206,7 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
 
     if config.get("validate_artifacts", True):
-        if add_step("validate_pipeline_artifacts", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py")), str(run_dir / "manifest.json"), "--audit", str(outputs["pipeline_artifact_validation"]), "--max-report-lines", str(config.get("max_report_lines", 120))]):
+        if add_step("validate_pipeline_artifacts", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py")), str(run_dir / "manifest.json"), "--audit", str(outputs["pipeline_artifact_validation"]), "--max-report-lines", str(config.get("max_report_lines", 0))]):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
         manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
     return manifest
@@ -245,8 +245,9 @@ def finalize_manifest(
             "pipeline_changes_model_outputs": False,
             "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
             "provenance_policy": "all major intermediate artifacts and audit files are retained",
-            "report_policy": "market_report.md is concise by default; large row-level artifacts stay in JSON/JSONL files",
-            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and report length",
+            "report_policy": "market_report.md is an optional summary surface; complete dashboard data stays in JSON/JSONL artifacts",
+            "token_policy": "deterministic pipeline stages do not call LLMs; future LLM layers should operate on sampled or aggregated artifacts, not all 10k/1k/100 row-level records in one prompt",
+            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and optional report-length warnings",
             "limitations": [
                 "The pipeline orchestrates deterministic components and does not make outputs decision-grade.",
                 "Country pack quality and margin validity determine the statistical credibility of generated personas.",
