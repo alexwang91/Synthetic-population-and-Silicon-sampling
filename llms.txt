@@ -1,6 +1,6 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, country statistical data packs, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
@@ -9,6 +9,8 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Country pack build prompt: `skills/country-pack-builder/prompts/build_country_pack.md`
 - Country pack builder script: `skills/country-pack-builder/scripts/build_country_pack.py`
 - Country pack validator: `skills/country-pack-builder/scripts/validate_country_pack.py`
+- Seed cell generator: `skills/country-pack-builder/scripts/country_pack_to_cells.py`
+- IPF/raking script: `skills/country-pack-builder/scripts/run_ipf.py`
 - Weighted persona pricing skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
 - Interview QA rules: `skills/weighted-persona-pricing/references/interview-quality-controls.md`
 - Product scenario workflow: `skills/weighted-persona-pricing/references/product-scenario-workflow.md`
@@ -20,6 +22,8 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Build or audit a country pack before claiming census-calibrated weighted personas.
 - Country packs must separate official margins, survey margins, derived margins, imputed priors, and unavailable constraints.
 - Use `build_country_pack.py` for a structural skeleton only; it does not fetch or verify official source tables.
+- Use `country_pack_to_cells.py` to create seed cells; seed cells are not calibrated until `run_ipf.py` succeeds against valid margins.
+- Use `run_ipf.py` only with official, survey-derived, or explicitly documented margin targets.
 - Person-level output must be a discrete `choice`, not only probabilities.
 - Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
 - LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
@@ -31,7 +35,10 @@ Private research prototype for census-weighted synthetic respondents, country st
 ```powershell
 python skills\country-pack-builder\scripts\build_country_pack.py --country-name Serbia --iso2 RS --iso3 SRB --population-year 2022 --nso-name "Statistical Office of the Republic of Serbia" --nso-url "https://www.stat.gov.rs/" --total-population 6647003 --male-count 3231978 --female-count 3415025 --output country_packs\RS\metadata.json
 python skills\country-pack-builder\scripts\validate_country_pack.py skills\country-pack-builder\examples\RS_country_pack_v0_1.json
+python skills\country-pack-builder\scripts\country_pack_to_cells.py skills\country-pack-builder\examples\RS_country_pack_v0_1.json --dimension region=Belgrade,Vojvodina --dimension sex=male,female --output runs\serbia-demo\seed_cells.jsonl
+python skills\country-pack-builder\scripts\run_ipf.py runs\serbia-demo\seed_cells.jsonl runs\serbia-demo\margins.json --output runs\serbia-demo\weighted_cells.jsonl --audit runs\serbia-demo\ipf_audit.json
 python tests\test_country_pack_builder.py
+python tests\test_country_pack_ipf_pipeline.py
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
