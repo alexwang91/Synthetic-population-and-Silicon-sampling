@@ -1,0 +1,29 @@
+{
+  "scenario_id": "smartwatch_huawei_fit5pro_vs_samsung_gw8",
+  "category": "smartwatch",
+  "currency": "EUR",
+  "alternatives": [
+    {
+      "id": "A",
+      "name": "Huawei Watch Fit 5 Pro",
+      "brand": "Huawei",
+      "price": 249,
+      "warranty": "2 years",
+      "features": ["long battery life", "AMOLED display", "sports tracking", "health metrics"],
+      "attributes": {
+        "ecosystem_fit": "android_general"
+      }
+    },
+    {
+      "id": "B",
+      "name": "Samsung Galaxy Watch 8",
+      "brand": "Samsung",
+      "price": 329,
+      "warranty": "2 years",
+      "features": ["Wear OS", "Samsung ecosystem", "advanced health tracking", "payments", "apps"],
+      "attributes": {
+        "ecosystem_fit": "samsung_android"
+      }
+    }
+  ]
+}
