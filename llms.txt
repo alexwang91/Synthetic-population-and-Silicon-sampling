@@ -1,11 +1,12 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, token/cost control, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
 - README: `README.md`
 - Check runner: `scripts/run_all_checks.py`
+- Token and scaling policy: `skills/weighted-persona-pricing/references/token-and-scaling-policy.md`
 - Country pack skill entrypoint: `skills/country-pack-builder/SKILL.md`
 - Country pack build prompt: `skills/country-pack-builder/prompts/build_country_pack.md`
 - Country pack builder script: `skills/country-pack-builder/scripts/build_country_pack.py`
@@ -40,6 +41,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Use `run_choice_model.py` as an uncalibrated rule-based random-utility baseline only; utilities and probabilities are diagnostics, while the row-level output must remain a discrete choice.
 - Use `run_scenario_pipeline.py` to orchestrate existing audited steps; it should not add new model assumptions or silently modify artifacts.
 - Use `generate_market_report.py` for summary/report surfaces; do not paste row-level personas, choices, or large artifacts into report text or LLM context.
+- Use `token-and-scaling-policy.md` when deciding whether to run LLM interviews at 10k/1k/100 scale.
 - Report length is not a default hard limit. `--max-report-lines` on `validate_pipeline_artifacts.py` is warning-only unless `--fail-on-warning` is used.
 - Use `validate_pipeline_artifacts.py` as the final acceptance check for a run folder; missing artifacts, failed audits, or invalid JSON should block delivery.
 - Current deterministic pipeline stages do not call LLMs per persona. Future LLM layers should operate on sampled or aggregated artifacts, not all 10k/1k/100 row-level records in one prompt.
