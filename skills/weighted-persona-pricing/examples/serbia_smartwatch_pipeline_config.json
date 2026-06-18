@@ -34,6 +34,7 @@
   "product_scenario": "skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json",
   "category": "smartwatch",
   "category_price_index": 0.7,
+  "interview_engine": "rule_based_baseline",
   "ipf_iterations": 50,
   "ipf_tolerance": 1e-9,
   "choice_mode": "argmax",
