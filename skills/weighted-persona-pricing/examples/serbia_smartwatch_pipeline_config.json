@@ -39,5 +39,10 @@
   "choice_mode": "argmax",
   "choice_temperature": 0.35,
   "bootstrap_iterations": 30,
-  "bootstrap_seed": 20260618
+  "bootstrap_seed": 20260618,
+  "generate_report": true,
+  "report_max_reasons": 5,
+  "report_max_artifacts": 18,
+  "validate_artifacts": true,
+  "max_report_lines": 120
 }
