@@ -30,6 +30,7 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Builds country data packs** - separates official margins, survey priors, imputed fields, missing tables, calibration levels, and IPF readiness.
 - **Creates seed statistical cells** - turns an audited country pack plus explicit dimensions into a seed grid for raking.
 - **Runs IPF/raking** - fits seed cells to supplied official or survey margin targets and writes weighted cells.
+- **Samples persona skeletons** - uses deterministic largest-remainder allocation to convert weighted cells into exact-size `personas_core.jsonl` panels.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -53,7 +54,13 @@ Seed statistical cells
 IPF/raking to official or survey margins
         |
         v
-Statistical skeletons + weights
+Weighted cells
+        |
+        v
+Persona skeleton sampling
+        |
+        v
+personas_core.jsonl
         |
         v
 Soft-trait expansion with documented assumptions
@@ -102,9 +109,17 @@ python skills\country-pack-builder\scripts\run_ipf.py `
   --output runs\serbia-demo\weighted_cells.jsonl `
   --audit runs\serbia-demo\ipf_audit.json
 
+# Sample exact-size hard persona skeletons from weighted cells
+python skills\country-pack-builder\scripts\sample_persona_skeletons.py `
+  runs\serbia-demo\weighted_cells.jsonl `
+  --sample-size 1000 `
+  --output runs\serbia-demo\personas_core.jsonl `
+  --audit runs\serbia-demo\persona_sampling_audit.json
+
 # Run country-pack unit tests
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
+python tests\test_sample_persona_skeletons.py
 
 # Validate the choice interview contract
 python tests\test_choice_interview_validator.py
@@ -160,6 +175,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/country-pack-builder/scripts/validate_country_pack.py`](skills/country-pack-builder/scripts/validate_country_pack.py) | Country pack structure and audit-readiness validator |
 | [`skills/country-pack-builder/scripts/country_pack_to_cells.py`](skills/country-pack-builder/scripts/country_pack_to_cells.py) | Seed statistical cell generator |
 | [`skills/country-pack-builder/scripts/run_ipf.py`](skills/country-pack-builder/scripts/run_ipf.py) | Iterative proportional fitting / raking over seed cells |
+| [`skills/country-pack-builder/scripts/sample_persona_skeletons.py`](skills/country-pack-builder/scripts/sample_persona_skeletons.py) | Exact-size weighted persona skeleton sampler |
 | [`skills/country-pack-builder/examples/RS_country_pack_v0_1.json`](skills/country-pack-builder/examples/RS_country_pack_v0_1.json) | Serbia anchor-ready example pack |
 | [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Weighted persona pricing skill entrypoint |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
