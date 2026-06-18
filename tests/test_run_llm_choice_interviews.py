@@ -55,7 +55,21 @@ class LLMChoiceInterviewTest(unittest.TestCase):
                 },
             )
             result = subprocess.run(
-                [sys.executable, str(SCRIPT), "export-prompts", str(personas), str(scenario), "--output-prompts", str(prompts), "--audit", str(audit)],
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "export-prompts",
+                    str(personas),
+                    str(scenario),
+                    "--output-prompts",
+                    str(prompts),
+                    "--audit",
+                    str(audit),
+                    "--order-policy",
+                    "rotate",
+                    "--prompt-variant",
+                    "tradeoff",
+                ],
                 cwd=REPO_ROOT,
                 capture_output=True,
                 text=True,
@@ -64,9 +78,14 @@ class LLMChoiceInterviewTest(unittest.TestCase):
             rows = read_jsonl(prompts)
             self.assertEqual(len(rows), 2)
             self.assertIn("Allowed choice values", rows[0]["prompt"])
-            self.assertEqual(rows[0]["prompt_version"], "llm_choice_short_v0_1")
+            self.assertIn("canonical_choice_label", rows[0]["prompt"])
+            self.assertEqual(rows[0]["prompt_version"], "llm_choice_short_v0_2")
+            self.assertEqual(rows[0]["prompt_variant"], "tradeoff")
+            self.assertEqual(rows[0]["choice_label_map"]["A"], "focal_product")
+            self.assertEqual(rows[0]["choice_label_map"]["B"], "competitor")
             audit_data = json.loads(audit.read_text(encoding="utf-8"))
             self.assertEqual(audit_data["prompt_count"], 2)
+            self.assertIn("explicit_canonical_choice_label_map", audit_data["risk_controls"])
 
     def test_normalize_external_responses_to_choice_results_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -79,8 +98,24 @@ class LLMChoiceInterviewTest(unittest.TestCase):
             write_jsonl(
                 prompts,
                 [
-                    {"task_id": "task1", "persona_id": "RS-001", "population_weight": 10.0},
-                    {"task_id": "task2", "persona_id": "RS-002", "population_weight": 20.0},
+                    {
+                        "task_id": "task1",
+                        "persona_id": "RS-001",
+                        "population_weight": 10.0,
+                        "prompt_variant": "tradeoff",
+                        "order_policy": "reverse",
+                        "presented_alternative_order": ["B", "A", "none"],
+                        "choice_label_map": {"A": "focal_product", "B": "competitor", "none": "none_or_delay"},
+                    },
+                    {
+                        "task_id": "task2",
+                        "persona_id": "RS-002",
+                        "population_weight": 20.0,
+                        "prompt_variant": "tradeoff",
+                        "order_policy": "reverse",
+                        "presented_alternative_order": ["B", "A", "none"],
+                        "choice_label_map": {"A": "focal_product", "B": "competitor", "none": "none_or_delay"},
+                    },
                 ],
             )
             write_jsonl(
@@ -89,7 +124,7 @@ class LLMChoiceInterviewTest(unittest.TestCase):
                     {
                         "task_id": "task1",
                         "persona_id": "RS-001",
-                        "choice": "focal_product",
+                        "choice": "competitor",
                         "chosen_alternative_id": "A",
                         "chosen_alternative_name": "Product A",
                         "interview_response": "I would choose Product A because it fits my budget better.",
@@ -130,10 +165,13 @@ class LLMChoiceInterviewTest(unittest.TestCase):
             self.assertEqual(validate.returncode, 0, msg=validate.stdout + validate.stderr)
             rows = read_jsonl(choices)
             self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[0]["choice"], "focal_product")
             self.assertTrue(rows[0]["quality_controls"]["llm_generated"])
             self.assertEqual(rows[0]["generation_controls"]["method"], "llm_short_choice_interview")
+            self.assertEqual(rows[0]["generation_controls"]["order_policy"], "reverse")
             audit_data = json.loads(audit.read_text(encoding="utf-8"))
             self.assertEqual(audit_data["coverage_rate"], 1.0)
+            self.assertEqual(audit_data["choice_remap_count"], 1)
 
 
 if __name__ == "__main__":
