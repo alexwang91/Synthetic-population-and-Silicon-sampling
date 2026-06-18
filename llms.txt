@@ -1,11 +1,12 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, all-persona LLM choice interviews, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, token/cost control, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, all-persona LLM choice interviews, LLM choice risk controls, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, token/cost control, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
 - README: `README.md`
 - Original plan alignment: `skills/weighted-persona-pricing/references/original-plan-alignment.md`
+- LLM choice risk controls: `skills/weighted-persona-pricing/references/llm-choice-risk-controls.md`
 - Check runner: `scripts/run_all_checks.py`
 - Token and scaling policy: `skills/weighted-persona-pricing/references/token-and-scaling-policy.md`
 - Country pack skill entrypoint: `skills/country-pack-builder/SKILL.md`
@@ -20,6 +21,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Product scenario normalizer: `skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py`
 - Deterministic choice baseline: `skills/weighted-persona-pricing/scripts/run_choice_model.py`
 - LLM choice interview entrypoint: `skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py`
+- LLM choice quality validator: `skills/weighted-persona-pricing/scripts/validate_llm_choice_quality.py`
 - Scenario pipeline runner: `skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py`
 - Market report generator: `skills/weighted-persona-pricing/scripts/generate_market_report.py`
 - Pipeline artifact validator: `skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py`
@@ -43,8 +45,10 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Use `product_scenario_normalizer.py` to create finite CBC-style choice sets with mutually exclusive alternatives and an outside option before any choice model.
 - Use `run_choice_model.py` as an uncalibrated rule-based random-utility baseline only; it is for development, CI, and comparison, not the intended main simulator.
 - Use `run_llm_choice_interviews.py` as the intended LLM respondent interface. `export-prompts` prepares one short isolated interview prompt per selected persona; `normalize-responses` converts external LLM batch responses into validated choice rows.
+- In LLM prompts, choice labels must come from `canonical_choice_label`, not from displayed option position. Use `--order-policy rotate` to counterbalance alternative order by persona.
+- Use `validate_llm_choice_quality.py` after LLM response normalization to check variance compression, subgroup differentiation, reason-code variety, and order/position bias.
 - Use `run_scenario_pipeline.py` with `interview_engine: rule_based_baseline` for development/smoke tests and `interview_engine: llm_short_all` for the original all-persona LLM short-interview mode.
-- In `llm_short_all`, a pipeline without `llm_response_file` stops at `awaiting_llm_responses` after exporting prompts. A pipeline with `llm_response_file` normalizes responses and continues to validation, bootstrap, report, and artifact validation.
+- In `llm_short_all`, a pipeline without `llm_response_file` stops at `awaiting_llm_responses` after exporting prompts. A pipeline with `llm_response_file` normalizes responses and continues to validation, LLM quality validation, bootstrap, report, and artifact validation.
 - Use `generate_market_report.py` for summary/report surfaces; do not paste row-level personas, choices, or large artifacts into report text or LLM context.
 - Use `token-and-scaling-policy.md` when deciding whether to run LLM interviews at 10k/1k/100 scale.
 - Report length is not a default hard limit. `--max-report-lines` on `validate_pipeline_artifacts.py` is warning-only unless `--fail-on-warning` is used.
@@ -63,8 +67,9 @@ python scripts\run_all_checks.py
 python scripts\run_all_checks.py --include-slow
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py skills\weighted-persona-pricing\examples\serbia_smartwatch_pipeline_config.json --output-root runs
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py skills\weighted-persona-pricing\examples\serbia_smartwatch_llm_prompt_config.json --output-root runs
-python skills\weighted-persona-pricing\scripts\run_llm_choice_interviews.py export-prompts runs\serbia-demo\personas_enriched.jsonl runs\serbia-demo\normalized_choice_scenario.json --output-prompts runs\serbia-demo\llm_choice_prompts.jsonl --audit runs\serbia-demo\llm_choice_prompt_audit.json
+python skills\weighted-persona-pricing\scripts\run_llm_choice_interviews.py export-prompts runs\serbia-demo\personas_enriched.jsonl runs\serbia-demo\normalized_choice_scenario.json --output-prompts runs\serbia-demo\llm_choice_prompts.jsonl --audit runs\serbia-demo\llm_choice_prompt_audit.json --order-policy rotate --prompt-variant tradeoff
 python skills\weighted-persona-pricing\scripts\run_llm_choice_interviews.py normalize-responses runs\serbia-demo\llm_choice_prompts.jsonl runs\serbia-demo\llm_choice_responses.jsonl --output runs\serbia-demo\choice_results.jsonl --audit runs\serbia-demo\llm_choice_interview_audit.json
+python skills\weighted-persona-pricing\scripts\validate_llm_choice_quality.py runs\serbia-demo\personas_enriched.jsonl runs\serbia-demo\choice_results.jsonl --audit runs\serbia-demo\llm_choice_quality_audit.json
 python skills\weighted-persona-pricing\scripts\generate_market_report.py runs\serbia_smartwatch_pipeline_demo\manifest.json
 python skills\weighted-persona-pricing\scripts\validate_pipeline_artifacts.py runs\serbia_smartwatch_pipeline_demo\manifest.json --audit runs\serbia_smartwatch_pipeline_demo\pipeline_artifact_validation.json
 python skills\country-pack-builder\scripts\build_country_pack.py --country-name Serbia --iso2 RS --iso3 SRB --population-year 2022 --nso-name "Statistical Office of the Republic of Serbia" --nso-url "https://www.stat.gov.rs/" --total-population 6647003 --male-count 3231978 --female-count 3415025 --output country_packs\RS\metadata.json
@@ -85,6 +90,7 @@ python tests\test_validate_persona_coherence.py
 python tests\test_product_scenario_normalizer.py
 python tests\test_run_choice_model.py
 python tests\test_run_llm_choice_interviews.py
+python tests\test_validate_llm_choice_quality.py
 python tests\test_run_scenario_pipeline.py
 python tests\test_validate_pipeline_artifacts.py
 python tests\test_choice_interview_validator.py
