@@ -33,6 +33,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(manifest["status"], "passed")
             self.assertEqual(manifest["method"], "deterministic_reproducible_scenario_pipeline")
             self.assertFalse(manifest["scientific_boundary"]["pipeline_changes_model_outputs"])
+            self.assertIn("report_policy", manifest["scientific_boundary"])
             step_names = [step["step"] for step in manifest["steps"]]
             self.assertEqual(
                 step_names,
@@ -47,16 +48,28 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
                     "run_choice_model",
                     "validate_choice_interviews",
                     "bootstrap_choice_intervals",
+                    "generate_market_report",
                 ],
             )
             self.assertTrue((run_dir / "choice_results.jsonl").exists())
             self.assertTrue((run_dir / "choice_model_audit.json").exists())
             self.assertTrue((run_dir / "choice_interview_validation.json").exists())
             self.assertTrue((run_dir / "bootstrap_intervals.json").exists())
+            self.assertTrue((run_dir / "market_report.md").exists())
+            self.assertTrue((run_dir / "market_report.json").exists())
+            self.assertIn("market_report_md", manifest["outputs"])
+            self.assertIn("market_report_json", manifest["outputs"])
 
             choice_validation = json.loads((run_dir / "choice_interview_validation.json").read_text(encoding="utf-8"))
             self.assertTrue(choice_validation["passes_choice_interview_integrity"])
             self.assertEqual(choice_validation["record_count"], 40)
+
+            report_json = json.loads((run_dir / "market_report.json").read_text(encoding="utf-8"))
+            report_md = (run_dir / "market_report.md").read_text(encoding="utf-8")
+            self.assertEqual(report_json["run_id"], "serbia_smartwatch_pipeline_demo")
+            self.assertIn("# Market Report:", report_md)
+            self.assertIn("## Executive Summary", report_md)
+            self.assertLess(len(report_md.splitlines()), 120)
 
     def test_pipeline_can_stop_after_intermediate_step(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -82,6 +95,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(manifest["status"], "stopped")
             self.assertTrue((run_dir / "personas_enriched.jsonl").exists())
             self.assertFalse((run_dir / "choice_results.jsonl").exists())
+            self.assertFalse((run_dir / "market_report.md").exists())
 
 
 if __name__ == "__main__":
