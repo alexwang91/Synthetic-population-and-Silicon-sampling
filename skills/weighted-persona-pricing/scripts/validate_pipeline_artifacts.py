@@ -19,19 +19,22 @@ from typing import Any
 
 
 VALIDATOR_VERSION = "0.1.0"
-REQUIRED_OUTPUT_KEYS = [
+BASE_REQUIRED_OUTPUT_KEYS = [
     "seed_cells",
     "weighted_cells",
     "personas_core",
     "personas_enriched",
     "normalized_choice_scenario",
     "choice_results",
-    "choice_model_audit",
     "choice_interview_validation",
     "bootstrap_intervals",
     "market_report_md",
     "market_report_json",
 ]
+ENGINE_REQUIRED_OUTPUT_KEYS = {
+    "rule_based_baseline": ["choice_model_audit"],
+    "llm_short_all": ["llm_choice_prompts", "llm_choice_prompt_audit", "llm_choice_interview_audit"],
+}
 JSON_OUTPUT_KEYS = [
     "ipf_audit",
     "persona_sampling_audit",
@@ -39,6 +42,8 @@ JSON_OUTPUT_KEYS = [
     "persona_coherence_audit",
     "product_scenario_audit",
     "choice_model_audit",
+    "llm_choice_prompt_audit",
+    "llm_choice_interview_audit",
     "choice_interview_validation",
     "bootstrap_intervals",
     "market_report_json",
@@ -59,6 +64,11 @@ class IssueSink:
         payload = {"issue": issue}
         payload.update(extra)
         self.warnings.append(payload)
+
+
+def required_output_keys(manifest: dict[str, Any]) -> list[str]:
+    engine = str(manifest.get("interview_engine", "rule_based_baseline"))
+    return BASE_REQUIRED_OUTPUT_KEYS + ENGINE_REQUIRED_OUTPUT_KEYS.get(engine, [])
 
 
 def load_json(path: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -105,6 +115,9 @@ def nonempty_file(path: Path) -> bool:
 def check_manifest(manifest: dict[str, Any], manifest_path: Path, sink: IssueSink) -> None:
     if manifest.get("status") != "passed":
         sink.error("manifest_status_not_passed", status=manifest.get("status"))
+    engine = manifest.get("interview_engine", "rule_based_baseline")
+    if engine not in ENGINE_REQUIRED_OUTPUT_KEYS:
+        sink.error("unsupported_interview_engine", interview_engine=engine)
     steps = manifest.get("steps")
     if not isinstance(steps, list) or not steps:
         sink.error("manifest_missing_steps")
@@ -125,6 +138,8 @@ def check_manifest(manifest: dict[str, Any], manifest_path: Path, sink: IssueSin
         sink.warning("missing_report_policy")
     if not boundary.get("token_policy"):
         sink.warning("missing_token_policy")
+    if not boundary.get("original_plan_alignment"):
+        sink.warning("missing_original_plan_alignment")
     limitations = boundary.get("limitations")
     if not isinstance(limitations, list) or not limitations:
         sink.warning("missing_scientific_limitations")
@@ -139,7 +154,7 @@ def load_outputs(manifest: dict[str, Any], run_dir: Path, sink: IssueSink) -> di
     for key, raw in raw_outputs.items():
         if isinstance(raw, str) and raw:
             outputs[key] = resolve_output_path(raw, run_dir)
-    for key in REQUIRED_OUTPUT_KEYS:
+    for key in required_output_keys(manifest):
         if key not in outputs:
             sink.error("missing_required_output_key", key=key)
         elif not nonempty_file(outputs[key]):
@@ -161,7 +176,8 @@ def check_json_outputs(outputs: dict[str, Path], sink: IssueSink) -> dict[str, d
     return loaded
 
 
-def check_audits(artifacts: dict[str, dict[str, Any]], sink: IssueSink) -> None:
+def check_audits(manifest: dict[str, Any], artifacts: dict[str, dict[str, Any]], sink: IssueSink) -> None:
+    engine = str(manifest.get("interview_engine", "rule_based_baseline"))
     ipf = artifacts.get("ipf_audit", {})
     if ipf and ipf.get("converged") is not True:
         sink.error("ipf_not_converged", converged=ipf.get("converged"), warnings=ipf.get("warning_count"))
@@ -184,11 +200,18 @@ def check_audits(artifacts: dict[str, dict[str, Any]], sink: IssueSink) -> None:
     if choices and choices.get("record_count", 0) <= 0:
         sink.error("choice_validation_has_no_records", record_count=choices.get("record_count"))
 
-    choice_model = artifacts.get("choice_model_audit", {})
-    if choice_model and choice_model.get("record_count", 0) <= 0:
-        sink.error("choice_model_has_no_records", record_count=choice_model.get("record_count"))
-    if choice_model and choice_model.get("method") != "deterministic_rule_based_random_utility_baseline":
-        sink.warning("unexpected_choice_model_method", method=choice_model.get("method"))
+    if engine == "rule_based_baseline":
+        choice_model = artifacts.get("choice_model_audit", {})
+        if choice_model and choice_model.get("record_count", 0) <= 0:
+            sink.error("choice_model_has_no_records", record_count=choice_model.get("record_count"))
+        if choice_model and choice_model.get("method") != "deterministic_rule_based_random_utility_baseline":
+            sink.warning("unexpected_choice_model_method", method=choice_model.get("method"))
+    elif engine == "llm_short_all":
+        llm_audit = artifacts.get("llm_choice_interview_audit", {})
+        if llm_audit and llm_audit.get("coverage_rate", 0) < 1.0:
+            sink.warning("llm_choice_interview_coverage_below_one", coverage_rate=llm_audit.get("coverage_rate"))
+        if llm_audit and llm_audit.get("response_count", 0) <= 0:
+            sink.error("llm_choice_interview_has_no_responses", response_count=llm_audit.get("response_count"))
 
     report = artifacts.get("market_report_json", {})
     if report and not report.get("choice_shares"):
@@ -226,19 +249,21 @@ def validate_pipeline(path: Path, max_report_lines: int) -> dict[str, Any]:
     check_manifest(manifest, manifest_path, sink)
     outputs = load_outputs(manifest, run_dir, sink)
     artifacts = check_json_outputs(outputs, sink)
-    check_audits(artifacts, sink)
+    check_audits(manifest, artifacts, sink)
     check_report(outputs, max_report_lines, sink)
     return summary(manifest_path, manifest, outputs, sink, max_report_lines)
 
 
 def summary(manifest_path: Path, manifest: dict[str, Any], outputs: dict[str, Path], sink: IssueSink, max_report_lines: int) -> dict[str, Any]:
+    required_keys = required_output_keys(manifest) if manifest else BASE_REQUIRED_OUTPUT_KEYS
     return {
         "validator_version": VALIDATOR_VERSION,
         "run_id": manifest.get("run_id"),
+        "interview_engine": manifest.get("interview_engine"),
         "manifest": str(manifest_path),
         "max_report_lines": max_report_lines,
         "report_length_policy": "disabled" if max_report_lines <= 0 else "warning_only",
-        "required_output_count": len(REQUIRED_OUTPUT_KEYS),
+        "required_output_count": len(required_keys),
         "observed_output_count": len(outputs),
         "error_count": len(sink.errors),
         "warning_count": len(sink.warnings),
