@@ -1,11 +1,14 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
 - README: `README.md`
-- Skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
+- Country pack skill entrypoint: `skills/country-pack-builder/SKILL.md`
+- Country pack build prompt: `skills/country-pack-builder/prompts/build_country_pack.md`
+- Country pack validator: `skills/country-pack-builder/scripts/validate_country_pack.py`
+- Weighted persona pricing skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
 - Interview QA rules: `skills/weighted-persona-pricing/references/interview-quality-controls.md`
 - Product scenario workflow: `skills/weighted-persona-pricing/references/product-scenario-workflow.md`
 - Choice simulation rules: `skills/weighted-persona-pricing/references/choice-simulation.md`
@@ -13,6 +16,8 @@ Private research prototype for census-weighted synthetic respondents, isolated p
 
 ## Important Rules
 
+- Build or audit a country pack before claiming census-calibrated weighted personas.
+- Country packs must separate official margins, survey margins, derived margins, imputed priors, and unavailable constraints.
 - Person-level output must be a discrete `choice`, not only probabilities.
 - Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
 - LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
@@ -22,6 +27,7 @@ Private research prototype for census-weighted synthetic respondents, isolated p
 ## Useful Commands
 
 ```powershell
+python skills\country-pack-builder\scripts\validate_country_pack.py skills\country-pack-builder\examples\RS_country_pack_v0_1.json
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
