@@ -62,7 +62,6 @@ def command_as_text(command: list[str]) -> str:
 
 def run_command(command: list[str], *, cwd: Path, step_name: str, allow_failure: bool = False) -> dict[str, Any]:
     started = datetime.now(timezone.utc).isoformat()
-    completed = None
     process = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
     completed = datetime.now(timezone.utc).isoformat()
     result = {
@@ -160,6 +159,8 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "choice_model_audit": run_dir / "choice_model_audit.json",
         "choice_interview_validation": run_dir / "choice_interview_validation.json",
         "bootstrap_intervals": run_dir / "bootstrap_intervals.json",
+        "market_report_md": run_dir / "market_report.md",
+        "market_report_json": run_dir / "market_report.json",
     }
 
     steps: list[dict[str, Any]] = []
@@ -197,7 +198,12 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         if add_step("bootstrap_choice_intervals", [py, str(script_path("skills/weighted-persona-pricing/scripts/bootstrap_choice_intervals.py")), str(outputs["choice_results"]), "--output", str(outputs["bootstrap_intervals"]), "--iterations", str(bootstrap_iterations), "--seed", str(config.get("bootstrap_seed", 20260618))]):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
 
-    return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+    manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+    if config.get("generate_report", True):
+        if add_step("generate_market_report", [py, str(script_path("skills/weighted-persona-pricing/scripts/generate_market_report.py")), str(run_dir / "manifest.json"), "--output-md", str(outputs["market_report_md"]), "--output-json", str(outputs["market_report_json"]), "--max-reasons", str(config.get("report_max_reasons", 5)), "--max-artifacts", str(config.get("report_max_artifacts", 18))]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+    return manifest
 
 
 def finalize_manifest(
@@ -233,6 +239,7 @@ def finalize_manifest(
             "pipeline_changes_model_outputs": False,
             "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
             "provenance_policy": "all major intermediate artifacts and audit files are retained",
+            "report_policy": "market_report.md is concise by default; large row-level artifacts stay in JSON/JSONL files",
             "limitations": [
                 "The pipeline orchestrates deterministic components and does not make outputs decision-grade.",
                 "Country pack quality and margin validity determine the statistical credibility of generated personas.",
@@ -261,6 +268,7 @@ def parse_args() -> argparse.Namespace:
         "run_choice_model",
         "validate_choice_interviews",
         "bootstrap_choice_intervals",
+        "generate_market_report",
     ])
     return parser.parse_args()
 
