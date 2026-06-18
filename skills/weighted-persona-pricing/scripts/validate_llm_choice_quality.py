@@ -8,6 +8,11 @@ survey methodology work:
 - variance compression: choices, reasons, or confidence collapse into too few values
 - weak subgroup differentiation: important subgroups show no meaningful variation
 - prompt/order sensitivity: choices appear overly tied to presented position or prompt variant
+
+Substantive patterns such as all respondents choosing one product are warnings by
+default, not hard failures. A dominant or collapsed choice distribution can be a
+real product result or an LLM artifact; users can opt into hard failure with
+`--fail-on-collapse`.
 """
 
 from __future__ import annotations
@@ -20,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 
-VALIDATOR_VERSION = "0.1.0"
+VALIDATOR_VERSION = "0.1.1"
 DEFAULT_SUBGROUP_FIELDS = ["region", "sex", "education_level", "income_decile", "settlement_type", "employment_status"]
 CHOICES = ["focal_product", "competitor", "none_or_delay"]
 
@@ -191,13 +196,14 @@ def validate_quality(
     max_choice_share: float,
     min_meaningful_delta: float,
     max_position_share: float,
+    fail_on_collapse: bool,
 ) -> dict[str, Any]:
     sink = IssueSink()
     personas = load_personas(personas_path)
     rows = list(iter_jsonl(choice_results_path))
     if not rows:
         sink.error("no_choice_rows")
-        return summary(rows, personas, {}, {}, {}, sink, subgroup_fields)
+        return summary(rows, personas, {}, {}, {}, sink, subgroup_fields, fail_on_collapse)
 
     missing_personas = [row.get("persona_id") for row in rows if str(row.get("persona_id") or "") not in personas]
     if missing_personas:
@@ -208,7 +214,11 @@ def validate_quality(
     choice_entropy = normalized_entropy(choice_shares)
     max_observed_choice_share = max(choice_shares.values(), default=0.0)
     if len([value for value in choice_counts.values() if value > 0]) <= 1:
-        sink.error("choice_collapse_single_option", choice_shares=choice_shares)
+        issue_payload = {"choice_shares": choice_shares, "interpretation": "single-option dominance can be a real product result or a synthetic-response collapse; inspect product scenario and prompt robustness before invalidating the run"}
+        if fail_on_collapse:
+            sink.error("choice_collapse_single_option", **issue_payload)
+        else:
+            sink.warning("choice_collapse_single_option", **issue_payload)
     elif choice_entropy < min_choice_entropy:
         sink.warning("low_choice_distribution_entropy", normalized_entropy=choice_entropy, min_choice_entropy=min_choice_entropy, choice_shares=choice_shares)
     if max_observed_choice_share > max_choice_share:
@@ -266,6 +276,7 @@ def validate_quality(
         },
         sink,
         subgroup_fields,
+        fail_on_collapse,
     )
 
 
@@ -277,6 +288,7 @@ def summary(
     diagnostics: dict[str, Any],
     sink: IssueSink,
     subgroup_fields: list[str],
+    fail_on_collapse: bool,
 ) -> dict[str, Any]:
     return {
         "validator_version": VALIDATOR_VERSION,
@@ -286,12 +298,13 @@ def summary(
         "choice_distribution": choice_distribution,
         "confidence_distribution": confidence_distribution,
         "diagnostics": diagnostics,
+        "fail_on_collapse": fail_on_collapse,
         "error_count": len(sink.errors),
         "warning_count": len(sink.warnings),
         "errors": sink.errors[:200],
         "warnings": sink.warnings[:200],
         "passes_llm_choice_quality_validation": len(sink.errors) == 0,
-        "warning_policy": "Warnings flag likely LLM survey risks such as variance compression, weak subgroup differentiation, or order sensitivity; they do not automatically invalidate a run.",
+        "warning_policy": "Warnings flag likely LLM survey risks such as variance compression, weak subgroup differentiation, or order sensitivity; they do not automatically invalidate a run or force diversity.",
     }
 
 
@@ -306,6 +319,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-choice-share", type=float, default=0.92)
     parser.add_argument("--min-meaningful-delta", type=float, default=0.03)
     parser.add_argument("--max-position-share", type=float, default=0.70)
+    parser.add_argument("--fail-on-collapse", action="store_true")
     parser.add_argument("--fail-on-warning", action="store_true")
     return parser.parse_args()
 
@@ -322,6 +336,7 @@ def main() -> int:
         args.max_choice_share,
         args.min_meaningful_delta,
         args.max_position_share,
+        args.fail_on_collapse,
     )
     if args.audit:
         write_json(args.audit, result)
