@@ -21,11 +21,12 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 class DashboardDataGeneratorTest(unittest.TestCase):
-    def test_dashboard_data_contains_results_method_and_quality(self) -> None:
+    def test_dashboard_data_contains_results_method_quality_segments_and_samples(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             run_dir = Path(tmpdir) / "run"
             run_dir.mkdir()
             outputs = {
+                "personas_enriched": str(run_dir / "personas_enriched.jsonl"),
                 "choice_results": str(run_dir / "choice_results.jsonl"),
                 "choice_model_audit": str(run_dir / "choice_model_audit.json"),
                 "choice_interview_validation": str(run_dir / "choice_interview_validation.json"),
@@ -57,6 +58,13 @@ class DashboardDataGeneratorTest(unittest.TestCase):
                 },
             )
             write_jsonl(
+                run_dir / "personas_enriched.jsonl",
+                [
+                    {"persona_id": "P1", "population_weight": 2.0, "hard": {"region": "Belgrade", "sex": "female", "income_decile": "8", "settlement_type": "urban"}, "soft": {"psychographics": {"price_sensitivity": 0.4, "risk_aversion": 0.2}, "media_habits": {"digital_intensity": 0.9}}},
+                    {"persona_id": "P2", "population_weight": 1.0, "hard": {"region": "Vojvodina", "sex": "male", "income_decile": "3", "settlement_type": "rural"}, "soft": {"psychographics": {"price_sensitivity": 0.8, "risk_aversion": 0.7}, "media_habits": {"digital_intensity": 0.3}}},
+                ],
+            )
+            write_jsonl(
                 run_dir / "choice_results.jsonl",
                 [
                     {"persona_id": "P1", "population_weight": 2.0, "choice": "focal_product", "main_drivers": ["driver_a"], "main_barriers": ["barrier_a"], "answer_confidence": "medium"},
@@ -75,7 +83,7 @@ class DashboardDataGeneratorTest(unittest.TestCase):
 
             output = run_dir / "dashboard_data.json"
             result = subprocess.run(
-                [sys.executable, str(SCRIPT), str(run_dir / "manifest.json"), "--output", str(output)],
+                [sys.executable, str(SCRIPT), str(run_dir / "manifest.json"), "--output", str(output), "--medium-sample-size", "1", "--deep-sample-size", "1"],
                 cwd=REPO_ROOT,
                 capture_output=True,
                 text=True,
@@ -88,6 +96,16 @@ class DashboardDataGeneratorTest(unittest.TestCase):
             self.assertEqual(len(data["results"]["choice_shares"]), 2)
             self.assertTrue(data["quality"]["cards"])
             self.assertEqual(data["results"]["top_drivers"][0]["label"], "driver_a")
+            self.assertEqual(data["country_panel"]["respondent_count"], 2)
+            self.assertIn("region", data["country_panel"]["distributions"])
+            self.assertTrue(data["archetypes"])
+            self.assertIn("region", data["filter_options"])
+            self.assertTrue(data["segment_choice_cube"])
+            self.assertTrue(data["reason_cube"])
+            self.assertEqual(data["sample_layers"]["quantitative_panel"]["selected_count"], 2)
+            self.assertEqual(data["sample_layers"]["medium_explanation_sample"]["selected_count"], 1)
+            self.assertEqual(data["sample_layers"]["deep_case_sample"]["selected_count"], 1)
+            self.assertEqual(len(data["sample_layers"]["deep_case_cards"]), 1)
 
 
 if __name__ == "__main__":
