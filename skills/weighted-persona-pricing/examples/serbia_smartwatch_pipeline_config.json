@@ -44,5 +44,5 @@
   "report_max_reasons": 5,
   "report_max_artifacts": 18,
   "validate_artifacts": true,
-  "max_report_lines": 120
+  "max_report_lines": 0
 }
