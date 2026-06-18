@@ -34,6 +34,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(manifest["method"], "deterministic_reproducible_scenario_pipeline")
             self.assertFalse(manifest["scientific_boundary"]["pipeline_changes_model_outputs"])
             self.assertIn("report_policy", manifest["scientific_boundary"])
+            self.assertIn("acceptance_policy", manifest["scientific_boundary"])
             step_names = [step["step"] for step in manifest["steps"]]
             self.assertEqual(
                 step_names,
@@ -49,6 +50,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
                     "validate_choice_interviews",
                     "bootstrap_choice_intervals",
                     "generate_market_report",
+                    "validate_pipeline_artifacts",
                 ],
             )
             self.assertTrue((run_dir / "choice_results.jsonl").exists())
@@ -57,8 +59,10 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertTrue((run_dir / "bootstrap_intervals.json").exists())
             self.assertTrue((run_dir / "market_report.md").exists())
             self.assertTrue((run_dir / "market_report.json").exists())
+            self.assertTrue((run_dir / "pipeline_artifact_validation.json").exists())
             self.assertIn("market_report_md", manifest["outputs"])
             self.assertIn("market_report_json", manifest["outputs"])
+            self.assertIn("pipeline_artifact_validation", manifest["outputs"])
 
             choice_validation = json.loads((run_dir / "choice_interview_validation.json").read_text(encoding="utf-8"))
             self.assertTrue(choice_validation["passes_choice_interview_integrity"])
@@ -70,6 +74,10 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertIn("# Market Report:", report_md)
             self.assertIn("## Executive Summary", report_md)
             self.assertLess(len(report_md.splitlines()), 120)
+
+            artifact_validation = json.loads((run_dir / "pipeline_artifact_validation.json").read_text(encoding="utf-8"))
+            self.assertTrue(artifact_validation["passes_pipeline_artifact_validation"])
+            self.assertEqual(artifact_validation["error_count"], 0)
 
     def test_pipeline_can_stop_after_intermediate_step(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -96,6 +104,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertTrue((run_dir / "personas_enriched.jsonl").exists())
             self.assertFalse((run_dir / "choice_results.jsonl").exists())
             self.assertFalse((run_dir / "market_report.md").exists())
+            self.assertFalse((run_dir / "pipeline_artifact_validation.json").exists())
 
 
 if __name__ == "__main__":
