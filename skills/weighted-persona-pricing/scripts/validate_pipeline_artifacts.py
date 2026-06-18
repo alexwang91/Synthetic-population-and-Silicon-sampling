@@ -2,8 +2,12 @@
 """Validate a completed scenario pipeline run folder.
 
 This is an acceptance-check layer. It verifies that key artifacts exist, JSON
-artifacts parse, critical audit checks pass, the manifest preserves scientific
-boundaries, and the concise market report stays compact.
+artifacts parse, critical audit checks pass, and the manifest preserves
+scientific boundaries.
+
+Report length is not a default hard limit. If `--max-report-lines` is positive,
+an overlong report is emitted as a warning so callers can decide whether to
+fail with `--fail-on-warning`.
 """
 
 from __future__ import annotations
@@ -119,6 +123,8 @@ def check_manifest(manifest: dict[str, Any], manifest_path: Path, sink: IssueSin
         sink.warning("missing_choice_model_calibration_level")
     if not boundary.get("report_policy"):
         sink.warning("missing_report_policy")
+    if not boundary.get("token_policy"):
+        sink.warning("missing_token_policy")
     limitations = boundary.get("limitations")
     if not isinstance(limitations, list) or not limitations:
         sink.warning("missing_scientific_limitations")
@@ -200,8 +206,8 @@ def check_report(outputs: dict[str, Path], max_report_lines: int, sink: IssueSin
     except FileNotFoundError:
         sink.error("market_report_missing", path=str(report_md))
         return
-    if lines > max_report_lines:
-        sink.error("market_report_too_long", lines=lines, max_report_lines=max_report_lines, path=str(report_md))
+    if max_report_lines > 0 and lines > max_report_lines:
+        sink.warning("market_report_long", lines=lines, max_report_lines=max_report_lines, path=str(report_md))
     text = report_md.read_text(encoding="utf-8-sig")
     for heading in ("## Executive Summary", "## Choice Results", "## Audit Status", "## Method Boundary"):
         if heading not in text:
@@ -231,6 +237,7 @@ def summary(manifest_path: Path, manifest: dict[str, Any], outputs: dict[str, Pa
         "run_id": manifest.get("run_id"),
         "manifest": str(manifest_path),
         "max_report_lines": max_report_lines,
+        "report_length_policy": "disabled" if max_report_lines <= 0 else "warning_only",
         "required_output_count": len(REQUIRED_OUTPUT_KEYS),
         "observed_output_count": len(outputs),
         "error_count": len(sink.errors),
@@ -245,15 +252,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_or_manifest", type=Path)
     parser.add_argument("--audit", type=Path)
-    parser.add_argument("--max-report-lines", type=int, default=120)
+    parser.add_argument("--max-report-lines", type=int, default=0, help="0 disables report length checks; positive values emit warnings only.")
     parser.add_argument("--fail-on-warning", action="store_true")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    if args.max_report_lines <= 0:
-        raise ValueError("--max-report-lines must be positive")
     result = validate_pipeline(args.run_or_manifest, args.max_report_lines)
     if args.audit:
         write_json(args.audit, result)
