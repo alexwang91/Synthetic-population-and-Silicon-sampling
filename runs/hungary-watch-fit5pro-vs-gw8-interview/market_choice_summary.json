@@ -1,0 +1,40 @@
+{
+  "scenario": {
+    "country": "Hungary",
+    "category": "smartwatch",
+    "focal_product": "Huawei Watch Fit 5 Pro Orange",
+    "competitors": [
+      "Samsung Galaxy Watch 8 44 mm Silver"
+    ],
+    "target_population": "normalized 100,000 adult smartwatch purchase intenders"
+  },
+  "overall": {
+    "focal_product": {
+      "share": 0.3527,
+      "interval": [
+        0.3451,
+        0.36100750000000004
+      ],
+      "represented_people": 35270
+    },
+    "competitor": {
+      "share": 0.4519,
+      "interval": [
+        0.44277750000000005,
+        0.46101250000000005
+      ],
+      "represented_people": 45190
+    },
+    "none_or_delay": {
+      "share": 0.1954,
+      "interval": [
+        0.18869,
+        0.20240750000000002
+      ],
+      "represented_people": 19540
+    }
+  },
+  "calibration_level": "level_0_census_plus_model_assumptions",
+  "method": "weighted aggregation of discrete identity-first interview choices",
+  "interpretation": "Synthetic preference hypothesis; validate with Hungarian survey, sales, search or click data."
+}

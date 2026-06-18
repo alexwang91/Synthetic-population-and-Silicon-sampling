@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Keep the current interview-first example run; ignore the earlier score/probability prototype.
+runs/hungary-watch-fit5pro-vs-gw8/
+
+# Local environment noise
+.env
+.venv/
+venv/

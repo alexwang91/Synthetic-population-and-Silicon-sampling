@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weighted Persona Pricing"
+  short_description: "Census-weighted personas with isolated choice interviews"
+  default_prompt: "Use $weighted-persona-pricing to design a census-weighted synthetic consumer panel with isolated product choice interviews, segment lift, uncertainty, and audit controls."

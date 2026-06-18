@@ -1,0 +1,900 @@
+{
+  "record_count": 10000,
+  "effective_sample_size": 10000.0,
+  "total_weight": 100000.0,
+  "iterations": 120,
+  "seed": 42,
+  "overall": {
+    "point": {
+      "focal_product": 0.3527,
+      "competitor": 0.4519,
+      "none_or_delay": 0.1954
+    },
+    "intervals": {
+      "competitor": {
+        "mean": 0.45177249999999997,
+        "p2_5": 0.44277750000000005,
+        "p50": 0.4518,
+        "p97_5": 0.46101250000000005
+      },
+      "focal_product": {
+        "mean": 0.3525183333333333,
+        "p2_5": 0.3451,
+        "p50": 0.35245,
+        "p97_5": 0.36100750000000004
+      },
+      "none_or_delay": {
+        "mean": 0.19570916666666666,
+        "p2_5": 0.18869,
+        "p50": 0.1957,
+        "p97_5": 0.20240750000000002
+      }
+    }
+  },
+  "segments": [
+    {
+      "segment_id": "hte_labels.brand_feature:balanced_mainstream",
+      "sample_count": 2537,
+      "effective_sample_size": 2537.0,
+      "weighted_population_share": 0.2537,
+      "point": {
+        "focal_product": 0.3460780449349626,
+        "competitor": 0.45132045723295233,
+        "none_or_delay": 0.20260149783208514
+      },
+      "lift_vs_overall": {
+        "competitor": -0.0005795427670476916,
+        "focal_product": -0.006621955065037433,
+        "none_or_delay": 0.007201497832085152
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.45261135199054,
+          "p2_5": 0.43513992905005916,
+          "p50": 0.4519117067402444,
+          "p97_5": 0.4687229010642491
+        },
+        "focal_product": {
+          "mean": 0.3448758376034686,
+          "p2_5": 0.3283011430823808,
+          "p50": 0.34371304690579424,
+          "p97_5": 0.36304690579424514
+        },
+        "none_or_delay": {
+          "mean": 0.2025128104059913,
+          "p2_5": 0.18721915648403628,
+          "p50": 0.20220733149389042,
+          "p97_5": 0.21563854946787542
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.brand_feature:battery_led",
+      "sample_count": 5043,
+      "effective_sample_size": 5043.0,
+      "weighted_population_share": 0.5043,
+      "point": {
+        "competitor": 0.4421971048978782,
+        "none_or_delay": 0.19432877255601824,
+        "focal_product": 0.3634741225461035
+      },
+      "lift_vs_overall": {
+        "competitor": -0.0097028951021218,
+        "focal_product": 0.010774122546103493,
+        "none_or_delay": -0.0010712274439817482
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.44195584638773217,
+          "p2_5": 0.42967975411461434,
+          "p50": 0.44180051556613126,
+          "p97_5": 0.4558843942097957
+        },
+        "focal_product": {
+          "mean": 0.36466389054134446,
+          "p2_5": 0.352161411858021,
+          "p50": 0.3648621852072179,
+          "p97_5": 0.37736962125718815
+        },
+        "none_or_delay": {
+          "mean": 0.1933802630709234,
+          "p2_5": 0.18258972833630774,
+          "p50": 0.19323815189371407,
+          "p97_5": 0.20566131271068808
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.brand_feature:ecosystem_payment_led",
+      "sample_count": 2797,
+      "effective_sample_size": 2797.0,
+      "weighted_population_share": 0.2797,
+      "point": {
+        "competitor": 0.4873078298176618,
+        "none_or_delay": 0.18269574544154452,
+        "focal_product": 0.3299964247407937
+      },
+      "lift_vs_overall": {
+        "competitor": 0.03540782981766177,
+        "focal_product": -0.0227035752592063,
+        "none_or_delay": -0.012704254558455474
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4871231080920033,
+          "p2_5": 0.472640328923847,
+          "p50": 0.48623525205577406,
+          "p97_5": 0.5044780121558813
+        },
+        "focal_product": {
+          "mean": 0.33024967226790614,
+          "p2_5": 0.3106900250268144,
+          "p50": 0.3305327136217376,
+          "p97_5": 0.34683589560243117
+        },
+        "none_or_delay": {
+          "mean": 0.18262721964009057,
+          "p2_5": 0.16875223453700394,
+          "p50": 0.18269574544154452,
+          "p97_5": 0.19665713264211654
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.brand_feature:health_led",
+      "sample_count": 2505,
+      "effective_sample_size": 2505.0,
+      "weighted_population_share": 0.2505,
+      "point": {
+        "focal_product": 0.36766467065868264,
+        "competitor": 0.4367265469061876,
+        "none_or_delay": 0.19560878243512975
+      },
+      "lift_vs_overall": {
+        "competitor": -0.015173453093812406,
+        "focal_product": 0.014964670658682622,
+        "none_or_delay": 0.00020878243512975625
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4380272787757818,
+          "p2_5": 0.4203493013972056,
+          "p50": 0.43812375249501,
+          "p97_5": 0.4575249500998004
+        },
+        "focal_product": {
+          "mean": 0.366144377910845,
+          "p2_5": 0.3496107784431138,
+          "p50": 0.3666666666666667,
+          "p97_5": 0.3824451097804391
+        },
+        "none_or_delay": {
+          "mean": 0.19582834331337326,
+          "p2_5": 0.18276447105788424,
+          "p50": 0.19481037924151698,
+          "p97_5": 0.21079840319361276
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.brand_feature:style_gift_led",
+      "sample_count": 304,
+      "effective_sample_size": 304.0,
+      "weighted_population_share": 0.0304,
+      "point": {
+        "focal_product": 0.33881578947368424,
+        "none_or_delay": 0.19736842105263158,
+        "competitor": 0.46381578947368424
+      },
+      "lift_vs_overall": {
+        "competitor": 0.011915789473684213,
+        "focal_product": -0.013884210526315777,
+        "none_or_delay": 0.0019684210526315915
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4653782894736842,
+          "p2_5": 0.41110197368421053,
+          "p50": 0.46381578947368424,
+          "p97_5": 0.5165296052631578
+        },
+        "focal_product": {
+          "mean": 0.33796600877192984,
+          "p2_5": 0.2926809210526316,
+          "p50": 0.33881578947368424,
+          "p97_5": 0.38174342105263154
+        },
+        "none_or_delay": {
+          "mean": 0.19665570175438596,
+          "p2_5": 0.15460526315789475,
+          "p50": 0.19736842105263158,
+          "p97_5": 0.2435032894736842
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.category_need:fitness_outdoor_high",
+      "sample_count": 2358,
+      "effective_sample_size": 2358.0,
+      "weighted_population_share": 0.2358,
+      "point": {
+        "focal_product": 0.3893129770992366,
+        "competitor": 0.4215436810856658,
+        "none_or_delay": 0.18914334181509754
+      },
+      "lift_vs_overall": {
+        "competitor": -0.030356318914334213,
+        "focal_product": 0.03661297709923661,
+        "none_or_delay": -0.006256658184902453
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.42103124116482893,
+          "p2_5": 0.39989397794741305,
+          "p50": 0.4206955046649703,
+          "p97_5": 0.4394402035623409
+        },
+        "focal_product": {
+          "mean": 0.3894260672886627,
+          "p2_5": 0.3680767599660729,
+          "p50": 0.39016115351993214,
+          "p97_5": 0.4117896522476675
+        },
+        "none_or_delay": {
+          "mean": 0.18954269154650835,
+          "p2_5": 0.17556191687871076,
+          "p50": 0.18871925360474978,
+          "p97_5": 0.2052905004240882
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.category_need:general_wellness",
+      "sample_count": 6561,
+      "effective_sample_size": 6561.0,
+      "weighted_population_share": 0.6561,
+      "point": {
+        "focal_product": 0.3502514860539552,
+        "competitor": 0.45206523395823806,
+        "none_or_delay": 0.19768327998780674
+      },
+      "lift_vs_overall": {
+        "competitor": 0.00016523395823803133,
+        "focal_product": -0.002448513946044839,
+        "none_or_delay": 0.0022832799878067522
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4528959000152416,
+          "p2_5": 0.4410798658741046,
+          "p50": 0.4531321444901692,
+          "p97_5": 0.46444901691815266
+        },
+        "focal_product": {
+          "mean": 0.35005334552659656,
+          "p2_5": 0.338332571254382,
+          "p50": 0.3507087334247828,
+          "p97_5": 0.36198750190519735
+        },
+        "none_or_delay": {
+          "mean": 0.19705075445816186,
+          "p2_5": 0.18531854900167657,
+          "p50": 0.19722603261697913,
+          "p97_5": 0.20668724279835388
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.category_need:health_tracking_high",
+      "sample_count": 2505,
+      "effective_sample_size": 2505.0,
+      "weighted_population_share": 0.2505,
+      "point": {
+        "focal_product": 0.36766467065868264,
+        "competitor": 0.4367265469061876,
+        "none_or_delay": 0.19560878243512975
+      },
+      "lift_vs_overall": {
+        "competitor": -0.015173453093812406,
+        "focal_product": 0.014964670658682622,
+        "none_or_delay": 0.00020878243512975625
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.43787757817697937,
+          "p2_5": 0.4191417165668663,
+          "p50": 0.4379241516966068,
+          "p97_5": 0.45509980039920156
+        },
+        "focal_product": {
+          "mean": 0.36573186959414505,
+          "p2_5": 0.34409181636726544,
+          "p50": 0.36686626746506984,
+          "p97_5": 0.38083832335329343
+        },
+        "none_or_delay": {
+          "mean": 0.19639055222887558,
+          "p2_5": 0.1836127744510978,
+          "p50": 0.19560878243512975,
+          "p97_5": 0.21159680638722556
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.category_need:low_urgency",
+      "sample_count": 1461,
+      "effective_sample_size": 1461.0,
+      "weighted_population_share": 0.1461,
+      "point": {
+        "focal_product": 0.3162217659137577,
+        "competitor": 0.43600273785078714,
+        "none_or_delay": 0.24777549623545517
+      },
+      "lift_vs_overall": {
+        "competitor": -0.015897262149212887,
+        "focal_product": -0.03647823408624229,
+        "none_or_delay": 0.05237549623545518
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4361225188227242,
+          "p2_5": 0.4140657084188912,
+          "p50": 0.43600273785078714,
+          "p97_5": 0.46004449007529086
+        },
+        "focal_product": {
+          "mean": 0.3159080538443988,
+          "p2_5": 0.29086242299794657,
+          "p50": 0.3162217659137577,
+          "p97_5": 0.33814168377823406
+        },
+        "none_or_delay": {
+          "mean": 0.24796942733287702,
+          "p2_5": 0.22992813141683777,
+          "p50": 0.24914442162902123,
+          "p97_5": 0.2670602327173169
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.category_need:replacement_or_purchase_urgent",
+      "sample_count": 1978,
+      "effective_sample_size": 1978.0,
+      "weighted_population_share": 0.1978,
+      "point": {
+        "focal_product": 0.3877654196157735,
+        "competitor": 0.46309403437815977,
+        "none_or_delay": 0.14914054600606674
+      },
+      "lift_vs_overall": {
+        "competitor": 0.011194034378159745,
+        "focal_product": 0.035065419615773474,
+        "none_or_delay": -0.04625945399393325
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.46156049882035727,
+          "p2_5": 0.44079878665318506,
+          "p50": 0.4625884732052578,
+          "p97_5": 0.47889282103134473
+        },
+        "focal_product": {
+          "mean": 0.39031007751937985,
+          "p2_5": 0.36751769464105155,
+          "p50": 0.39004044489383216,
+          "p97_5": 0.4115520728008089
+        },
+        "none_or_delay": {
+          "mean": 0.14812942366026288,
+          "p2_5": 0.1324443882709808,
+          "p50": 0.14812942366026288,
+          "p97_5": 0.16430738119312438
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.channel_media:ios_user",
+      "sample_count": 2302,
+      "effective_sample_size": 2302.0,
+      "weighted_population_share": 0.2302,
+      "point": {
+        "focal_product": 0.47002606429192006,
+        "competitor": 0.3310165073848827,
+        "none_or_delay": 0.1989574283231972
+      },
+      "lift_vs_overall": {
+        "competitor": -0.12088349261511733,
+        "focal_product": 0.11732606429192005,
+        "none_or_delay": 0.0035574283231972204
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.3323124818997973,
+          "p2_5": 0.3101433536055604,
+          "p50": 0.3316681146828845,
+          "p97_5": 0.3557884448305821
+        },
+        "focal_product": {
+          "mean": 0.46900521285838404,
+          "p2_5": 0.44945699391833194,
+          "p50": 0.4687228496959166,
+          "p97_5": 0.48707645525629883
+        },
+        "none_or_delay": {
+          "mean": 0.1986823052418187,
+          "p2_5": 0.1828301476976542,
+          "p50": 0.19874022589052998,
+          "p97_5": 0.21332536924413553
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.channel_media:samsung_android_ecosystem",
+      "sample_count": 4004,
+      "effective_sample_size": 4004.0,
+      "weighted_population_share": 0.4004,
+      "point": {
+        "focal_product": 0.3011988011988012,
+        "competitor": 0.5262237762237763,
+        "none_or_delay": 0.1725774225774226
+      },
+      "lift_vs_overall": {
+        "competitor": 0.07432377622377623,
+        "focal_product": -0.0515011988011988,
+        "none_or_delay": -0.0228225774225774
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.5256764069264069,
+          "p2_5": 0.5122377622377622,
+          "p50": 0.5252247752247752,
+          "p97_5": 0.5407405094905094
+        },
+        "focal_product": {
+          "mean": 0.3015068265068265,
+          "p2_5": 0.2872127872127872,
+          "p50": 0.3025724275724276,
+          "p97_5": 0.31245004995004994
+        },
+        "none_or_delay": {
+          "mean": 0.17281676656676656,
+          "p2_5": 0.16281843156843157,
+          "p50": 0.17182817182817184,
+          "p97_5": 0.18535839160839157
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.channel_media:town_rural_value_research",
+      "sample_count": 2928,
+      "effective_sample_size": 2928.0,
+      "weighted_population_share": 0.2928,
+      "point": {
+        "focal_product": 0.3326502732240437,
+        "competitor": 0.4672131147540984,
+        "none_or_delay": 0.20013661202185792
+      },
+      "lift_vs_overall": {
+        "competitor": 0.015313114754098356,
+        "focal_product": -0.02004972677595629,
+        "none_or_delay": 0.004736612021857933
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4678051001821493,
+          "p2_5": 0.4511441256830601,
+          "p50": 0.46755464480874315,
+          "p97_5": 0.48303449453551905
+        },
+        "focal_product": {
+          "mean": 0.3319785974499089,
+          "p2_5": 0.3165300546448087,
+          "p50": 0.33299180327868855,
+          "p97_5": 0.34562841530054644
+        },
+        "none_or_delay": {
+          "mean": 0.2002163023679417,
+          "p2_5": 0.18642418032786884,
+          "p50": 0.20064890710382513,
+          "p97_5": 0.21792178961748632
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.channel_media:urban_online_research",
+      "sample_count": 7072,
+      "effective_sample_size": 7072.0,
+      "weighted_population_share": 0.7072,
+      "point": {
+        "focal_product": 0.36100113122171945,
+        "competitor": 0.44555995475113125,
+        "none_or_delay": 0.19343891402714933
+      },
+      "lift_vs_overall": {
+        "competitor": -0.006340045248868775,
+        "focal_product": 0.008301131221719438,
+        "none_or_delay": -0.0019610859728506624
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.44486472473604827,
+          "p2_5": 0.43362556561085974,
+          "p50": 0.44471153846153844,
+          "p97_5": 0.4580069287330316
+        },
+        "focal_product": {
+          "mean": 0.3613086821266968,
+          "p2_5": 0.34925763574660634,
+          "p50": 0.3608597285067873,
+          "p97_5": 0.3734516402714932
+        },
+        "none_or_delay": {
+          "mean": 0.1938265931372549,
+          "p2_5": 0.183512443438914,
+          "p50": 0.19379242081447964,
+          "p97_5": 0.20305783371040725
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.price_value:below_huawei_price_ceiling",
+      "sample_count": 2809,
+      "effective_sample_size": 2809.0,
+      "weighted_population_share": 0.2809,
+      "point": {
+        "competitor": 0.5190459238163048,
+        "none_or_delay": 0.2876468494126023,
+        "focal_product": 0.1933072267710929
+      },
+      "lift_vs_overall": {
+        "competitor": 0.06714592381630474,
+        "focal_product": -0.1593927732289071,
+        "none_or_delay": 0.09224684941260233
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.5200842529963213,
+          "p2_5": 0.5014595941616233,
+          "p50": 0.5190459238163048,
+          "p97_5": 0.538625845496618
+        },
+        "focal_product": {
+          "mean": 0.1921680313278747,
+          "p2_5": 0.17799928800284798,
+          "p50": 0.19241723033107866,
+          "p97_5": 0.20331968672125308
+        },
+        "none_or_delay": {
+          "mean": 0.287747715675804,
+          "p2_5": 0.26983802064791745,
+          "p50": 0.28835884656461375,
+          "p97_5": 0.30438768244927017
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.price_value:high_price_sensitivity",
+      "sample_count": 1832,
+      "effective_sample_size": 1832.0,
+      "weighted_population_share": 0.1832,
+      "point": {
+        "competitor": 0.4759825327510917,
+        "none_or_delay": 0.2418122270742358,
+        "focal_product": 0.28220524017467247
+      },
+      "lift_vs_overall": {
+        "competitor": 0.02408253275109168,
+        "focal_product": -0.07049475982532755,
+        "none_or_delay": 0.04641222707423581
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4758278748180495,
+          "p2_5": 0.45360262008733626,
+          "p50": 0.47625545851528384,
+          "p97_5": 0.5005594978165939
+        },
+        "focal_product": {
+          "mean": 0.28314228529839885,
+          "p2_5": 0.26363264192139735,
+          "p50": 0.28329694323144106,
+          "p97_5": 0.3030431222707423
+        },
+        "none_or_delay": {
+          "mean": 0.24102983988355167,
+          "p2_5": 0.22046943231441046,
+          "p50": 0.2423580786026201,
+          "p97_5": 0.2625955240174673
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.price_value:huawei_within_price_ceiling",
+      "sample_count": 7191,
+      "effective_sample_size": 7191.0,
+      "weighted_population_share": 0.7191,
+      "point": {
+        "focal_product": 0.4149631483799193,
+        "competitor": 0.4256709776109025,
+        "none_or_delay": 0.15936587400917815
+      },
+      "lift_vs_overall": {
+        "competitor": -0.026229022389097523,
+        "focal_product": 0.06226314837991931,
+        "none_or_delay": -0.03603412599082184
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4263164603903027,
+          "p2_5": 0.4156584619663468,
+          "p50": 0.42601863440411625,
+          "p97_5": 0.4376581838409122
+        },
+        "focal_product": {
+          "mean": 0.41376025587539983,
+          "p2_5": 0.4028438325684884,
+          "p50": 0.4135725212070644,
+          "p97_5": 0.4245689055764149
+        },
+        "none_or_delay": {
+          "mean": 0.15992328373429748,
+          "p2_5": 0.15143234598804062,
+          "p50": 0.16006118759560561,
+          "p97_5": 0.16729592546238353
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.price_value:medium_price_sensitivity",
+      "sample_count": 4921,
+      "effective_sample_size": 4921.0,
+      "weighted_population_share": 0.4921,
+      "point": {
+        "focal_product": 0.3442389758179232,
+        "none_or_delay": 0.1958951432635643,
+        "competitor": 0.4598658809185125
+      },
+      "lift_vs_overall": {
+        "competitor": 0.007965880918512469,
+        "focal_product": -0.008461024182076837,
+        "none_or_delay": 0.0004951432635643127
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4603654406285985,
+          "p2_5": 0.44704328388538916,
+          "p50": 0.46057711847185534,
+          "p97_5": 0.4740906319853688
+        },
+        "focal_product": {
+          "mean": 0.34396802817855454,
+          "p2_5": 0.3297754521438732,
+          "p50": 0.34383255435887017,
+          "p97_5": 0.35501422475106686
+        },
+        "none_or_delay": {
+          "mean": 0.195666531192847,
+          "p2_5": 0.1852469010363747,
+          "p50": 0.19498069498069498,
+          "p97_5": 0.20585754927860192
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.price_value:premium_tolerant",
+      "sample_count": 3247,
+      "effective_sample_size": 3247.0,
+      "weighted_population_share": 0.3247,
+      "point": {
+        "focal_product": 0.40529719741299663,
+        "competitor": 0.42623960578995995,
+        "none_or_delay": 0.1684631967970434
+      },
+      "lift_vs_overall": {
+        "competitor": -0.02566039421004007,
+        "focal_product": 0.05259719741299662,
+        "none_or_delay": -0.026936803202956577
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.42611384868083363,
+          "p2_5": 0.40682168155220205,
+          "p50": 0.4268555589775177,
+          "p97_5": 0.4435093932861102
+        },
+        "focal_product": {
+          "mean": 0.4053100297710707,
+          "p2_5": 0.38709578072066525,
+          "p50": 0.40529719741299663,
+          "p97_5": 0.4222513089005236
+        },
+        "none_or_delay": {
+          "mean": 0.1685761215480957,
+          "p2_5": 0.15791499846011703,
+          "p50": 0.16907914998460116,
+          "p97_5": 0.17710194025254078
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.risk_trust:battery_reliability_priority",
+      "sample_count": 3852,
+      "effective_sample_size": 3852.0,
+      "weighted_population_share": 0.3852,
+      "point": {
+        "competitor": 0.4434060228452752,
+        "none_or_delay": 0.19626168224299065,
+        "focal_product": 0.3603322949117342
+      },
+      "lift_vs_overall": {
+        "competitor": -0.00849397715472483,
+        "focal_product": 0.007632294911734172,
+        "none_or_delay": 0.0008616822429906579
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4424692800276912,
+          "p2_5": 0.4278102284527518,
+          "p50": 0.4421079958463136,
+          "p97_5": 0.4590277777777778
+        },
+        "focal_product": {
+          "mean": 0.36086664935964,
+          "p2_5": 0.3470469885773624,
+          "p50": 0.3611111111111111,
+          "p97_5": 0.3754023883696781
+        },
+        "none_or_delay": {
+          "mean": 0.19666407061266875,
+          "p2_5": 0.18553997923156804,
+          "p50": 0.1967808930425753,
+          "p97_5": 0.21002725856697818
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.risk_trust:google_pay_trust",
+      "sample_count": 1235,
+      "effective_sample_size": 1235.0,
+      "weighted_population_share": 0.1235,
+      "point": {
+        "competitor": 0.4785425101214575,
+        "focal_product": 0.3263157894736842,
+        "none_or_delay": 0.1951417004048583
+      },
+      "lift_vs_overall": {
+        "competitor": 0.026642510121457463,
+        "focal_product": -0.026384210526315788,
+        "none_or_delay": -0.0002582995951417033
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4808704453441296,
+          "p2_5": 0.4542307692307692,
+          "p50": 0.47935222672064776,
+          "p97_5": 0.5110323886639676
+        },
+        "focal_product": {
+          "mean": 0.3256207827260459,
+          "p2_5": 0.2995141700404858,
+          "p50": 0.3255060728744939,
+          "p97_5": 0.3539068825910931
+        },
+        "none_or_delay": {
+          "mean": 0.19350877192982455,
+          "p2_5": 0.1716396761133603,
+          "p50": 0.19271255060728745,
+          "p97_5": 0.21303643724696356
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.risk_trust:huawei_brand_open",
+      "sample_count": 2640,
+      "effective_sample_size": 2640.0,
+      "weighted_population_share": 0.264,
+      "point": {
+        "none_or_delay": 0.2015151515151515,
+        "focal_product": 0.3587121212121212,
+        "competitor": 0.43977272727272726
+      },
+      "lift_vs_overall": {
+        "competitor": -0.012127272727272764,
+        "focal_product": 0.006012121212121191,
+        "none_or_delay": 0.006115151515151518
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4397064393939394,
+          "p2_5": 0.42423295454545457,
+          "p50": 0.43920454545454546,
+          "p97_5": 0.4553125
+        },
+        "focal_product": {
+          "mean": 0.358364898989899,
+          "p2_5": 0.340530303030303,
+          "p50": 0.35776515151515154,
+          "p97_5": 0.37916666666666665
+        },
+        "none_or_delay": {
+          "mean": 0.2019286616161616,
+          "p2_5": 0.18862689393939394,
+          "p50": 0.20170454545454547,
+          "p97_5": 0.21673295454545452
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.risk_trust:ios_compatibility_priority",
+      "sample_count": 2302,
+      "effective_sample_size": 2302.0,
+      "weighted_population_share": 0.2302,
+      "point": {
+        "focal_product": 0.47002606429192006,
+        "competitor": 0.3310165073848827,
+        "none_or_delay": 0.1989574283231972
+      },
+      "lift_vs_overall": {
+        "competitor": -0.12088349261511733,
+        "focal_product": 0.11732606429192005,
+        "none_or_delay": 0.0035574283231972204
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.33166811468288443,
+          "p2_5": 0.31407471763683753,
+          "p50": 0.3318853171155517,
+          "p97_5": 0.3488705473501303
+        },
+        "focal_product": {
+          "mean": 0.4699428033593976,
+          "p2_5": 0.45039096437880105,
+          "p50": 0.47089487402258906,
+          "p97_5": 0.4883796698523023
+        },
+        "none_or_delay": {
+          "mean": 0.19838908195771793,
+          "p2_5": 0.18241746307558646,
+          "p50": 0.19874022589052998,
+          "p97_5": 0.21200043440486532
+        }
+      }
+    },
+    {
+      "segment_id": "hte_labels.risk_trust:samsung_brand_trust_advantage",
+      "sample_count": 2131,
+      "effective_sample_size": 2131.0,
+      "weighted_population_share": 0.2131,
+      "point": {
+        "competitor": 0.4809948381041764,
+        "focal_product": 0.328484279680901,
+        "none_or_delay": 0.19052088221492258
+      },
+      "lift_vs_overall": {
+        "competitor": 0.0290948381041764,
+        "focal_product": -0.02421572031909902,
+        "none_or_delay": -0.004879117785077408
+      },
+      "intervals": {
+        "competitor": {
+          "mean": 0.4800484905365243,
+          "p2_5": 0.46221257625527923,
+          "p50": 0.4809948381041764,
+          "p97_5": 0.4984514312529329
+        },
+        "focal_product": {
+          "mean": 0.3294188956671359,
+          "p2_5": 0.31386672923510095,
+          "p50": 0.328953542937588,
+          "p97_5": 0.34775926794931955
+        },
+        "none_or_delay": {
+          "mean": 0.19053261379633973,
+          "p2_5": 0.17641952135147818,
+          "p50": 0.18958235570154858,
+          "p97_5": 0.2064758329422806
+        }
+      }
+    }
+  ]
+}

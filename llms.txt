@@ -1,0 +1,29 @@
+# Synthetic Population and Silicon Sampling
+
+Private research prototype for census-weighted synthetic respondents, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+
+## Start Here
+
+- README: `README.md`
+- Skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
+- Interview QA rules: `skills/weighted-persona-pricing/references/interview-quality-controls.md`
+- Product scenario workflow: `skills/weighted-persona-pricing/references/product-scenario-workflow.md`
+- Choice simulation rules: `skills/weighted-persona-pricing/references/choice-simulation.md`
+- Validation rules: `skills/weighted-persona-pricing/references/validation.md`
+
+## Important Rules
+
+- Person-level output must be a discrete `choice`, not only probabilities.
+- Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
+- LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
+- Market shares must be aggregated from weighted discrete choices.
+- Synthetic outputs are hypotheses, not real consumer observations.
+
+## Useful Commands
+
+```powershell
+python tests\test_choice_interview_validator.py
+python tests\test_interview_choice_contract.py
+python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
+python scripts\run_hungary_watch_scenario.py
+```

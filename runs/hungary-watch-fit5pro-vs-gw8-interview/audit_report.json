@@ -1,0 +1,87 @@
+{
+  "country": "Hungary",
+  "sample_size": 10000,
+  "coverage": "normalized adult smartwatch purchase intenders",
+  "calibration_level": "level_0_census_plus_model_assumptions",
+  "data_sources": [
+    {
+      "name": "World Bank WDI - Hungary total population",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.TOTL?format=json&date=2024",
+      "value": 9562065,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary urban population share",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.URB.TOTL.IN.ZS?format=json&date=2024",
+      "value": 70.491825943218,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary female population share",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.TOTL.FE.ZS?format=json&date=2024",
+      "value": 51.9821395629557,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary 0-14 / 15-64 / 65+ population shares",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.1564.TO.ZS?format=json&date=2024",
+      "value": {
+        "0_14": 14.4013810473594,
+        "15_64": 64.6054217208328,
+        "65_plus": 20.9931972318078
+      },
+      "year": 2024
+    },
+    {
+      "name": "Alza.hu Huawei Watch Fit 5 Pro product page",
+      "url": "https://www.alza.hu/huawei-watch-fit-5-pro-orange-d13350370.htm",
+      "observed_price_huf": 99990,
+      "observed_date": "2026-06-18"
+    },
+    {
+      "name": "Alza.hu Samsung Galaxy Watch 8 44 mm product page",
+      "url": "https://www.alza.hu/samsung-galaxy-watch-8-44-mm-ezust-d13190984.htm",
+      "observed_price_huf": 77990,
+      "observed_date": "2026-06-18"
+    }
+  ],
+  "choice_contract": {
+    "choice_results_rows": 10000,
+    "has_discrete_choice": true,
+    "has_interview_response": true,
+    "score_only_rows": 0,
+    "aggregation_method": "sum(weight * 1(choice == option)) / sum(weight)"
+  },
+  "marginal_fit": {
+    "female_share_target": 0.519821395629557,
+    "urban_share_target": 0.70491825943218,
+    "adult_age_structure": "modeled from 15-64 and 65+ aggregates; no full KSH microdata used"
+  },
+  "mean_absolute_percentage_error": null,
+  "duplicate_rate": 0.0,
+  "coherence_pass_rate": 1.0,
+  "prompt_sensitivity": {
+    "status": "not_run_no_external_llm_batch_used"
+  },
+  "model_version_sensitivity": {
+    "status": "not_applicable_programmatic_interview_run"
+  },
+  "segment_stability": {
+    "bootstrap_file": "bootstrap_intervals.json"
+  },
+  "high_imputation_fields": [
+    "smartwatch purchase intention",
+    "phone ecosystem",
+    "Google Pay need",
+    "brand trust",
+    "price ceiling",
+    "sport and health orientation",
+    "identity-first interview answer"
+  ],
+  "limitations": [
+    "No Hungarian smartwatch sales, click, or survey calibration was used.",
+    "Target population is normalized to 100,000 category intenders, not actual national annual demand.",
+    "This is descriptive segment lift, not causal HTE.",
+    "Synthetic interview answers are model assumptions, not real consumer statements."
+  ]
+}
