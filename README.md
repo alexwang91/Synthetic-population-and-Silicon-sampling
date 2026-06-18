@@ -21,12 +21,13 @@ _Census-weighted digital respondents for product choice, pricing, segment lift, 
 
 </div>
 
-This repo packages an agent skill and a runnable prototype for building weighted synthetic consumer panels where each digital respondent has an identity, answers a product scenario, and leaves an auditable trail from persona to choice to segment lift.
+This repo packages agent skills and a runnable prototype for building weighted synthetic consumer panels where each digital respondent has an identity, answers a product scenario, and leaves an auditable trail from country data pack to persona to choice to segment lift.
 
 AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repository before using the skill.
 
 ## What It Does
 
+- **Builds country data packs** - separates official margins, survey priors, imputed fields, missing tables, calibration levels, and IPF readiness.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -39,6 +40,9 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 
 ```text
 Country/product scenario
+        |
+        v
+Country pack: sources + constraints + missing tables
         |
         v
 Statistical skeletons + weights
@@ -64,6 +68,10 @@ The important boundary: respondents answer as people; statistics aggregate after
 The prototype uses only the Python standard library.
 
 ```powershell
+# Validate the country-pack builder example
+python skills\country-pack-builder\scripts\validate_country_pack.py `
+  skills\country-pack-builder\examples\RS_country_pack_v0_1.json
+
 # Validate the choice interview contract
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
@@ -77,9 +85,10 @@ python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py `
 python scripts\run_hungary_watch_scenario.py
 ```
 
-Use the skill from an agent:
+Use the skills from an agent:
 
 ```text
+Use $country-pack-builder to build or audit a country statistical data pack before panel generation.
 Use $weighted-persona-pricing to evaluate a country/category/product/competitor scenario with isolated synthetic respondents, segment lift, confidence intervals, and audit notes.
 ```
 
@@ -110,7 +119,12 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 
 | Path | Purpose |
 |---|---|
-| [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Main Codex skill entrypoint |
+| [`skills/country-pack-builder/SKILL.md`](skills/country-pack-builder/SKILL.md) | Country statistical data pack skill entrypoint |
+| [`skills/country-pack-builder/prompts/build_country_pack.md`](skills/country-pack-builder/prompts/build_country_pack.md) | Reusable country pack generation prompt |
+| [`skills/country-pack-builder/schemas/country_pack.schema.json`](skills/country-pack-builder/schemas/country_pack.schema.json) | JSON schema for combined country pack files |
+| [`skills/country-pack-builder/scripts/validate_country_pack.py`](skills/country-pack-builder/scripts/validate_country_pack.py) | Country pack structure and audit-readiness validator |
+| [`skills/country-pack-builder/examples/RS_country_pack_v0_1.json`](skills/country-pack-builder/examples/RS_country_pack_v0_1.json) | Serbia anchor-ready example pack |
+| [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Weighted persona pricing skill entrypoint |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
 | [`skills/weighted-persona-pricing/references/choice-simulation.md`](skills/weighted-persona-pricing/references/choice-simulation.md) | Interview-first product choice workflow |
 | [`skills/weighted-persona-pricing/scripts/validate_choice_interviews.py`](skills/weighted-persona-pricing/scripts/validate_choice_interviews.py) | Choice-row schema and contamination validator |
@@ -123,7 +137,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 
 | Surface | Status | Notes |
 |---|:---:|---|
-| Codex local skills | Ready | Copy or reference `skills/weighted-persona-pricing` |
+| Codex local skills | Ready | Copy or reference `skills/country-pack-builder` and `skills/weighted-persona-pricing` |
 | Windows PowerShell | Tested locally | Current workspace uses Windows paths |
 | Python | Ready | Standard-library scripts; tested with Python 3.13 |
 | GitHub README showcase style | Used | Structure follows an evidence-first showcase pattern |
@@ -134,6 +148,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 **Great fit if you...**
 
 - need a structured first pass before commissioning human research
+- need country-source audit before synthetic panel generation
 - want to compare products by country, segment, price, and reason
 - care about confidence intervals, segment lift, and auditability
 - need digital respondents that do not share context or target quotas
@@ -149,6 +164,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 
 | Start here | Go deeper |
 |---|---|
+| [Country pack builder](skills/country-pack-builder/SKILL.md) | [Country pack prompt](skills/country-pack-builder/prompts/build_country_pack.md) |
 | [Skill entrypoint](skills/weighted-persona-pricing/SKILL.md) | [Method routing](skills/weighted-persona-pricing/references/methodology-map.md) |
 | [Product scenario workflow](skills/weighted-persona-pricing/references/product-scenario-workflow.md) | [Country data packs](skills/weighted-persona-pricing/references/data-packs.md) |
 | [Interview quality controls](skills/weighted-persona-pricing/references/interview-quality-controls.md) | [Validation](skills/weighted-persona-pricing/references/validation.md) |
@@ -158,7 +174,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 
 | Approach | What it gives you | Main limitation |
 |---|---|---|
-| **This repo** | Weighted synthetic respondents, isolated interviews, intervals, audit files | Synthetic assumptions still need real-world calibration |
+| **This repo** | Country-pack audit, weighted synthetic respondents, isolated interviews, intervals, audit files | Synthetic assumptions still need real-world calibration |
 | One-shot persona prompt | Fast qualitative ideas | No stable weights, no isolation audit, weak reproducibility |
 | Score-only simulator | Easy aggregation | Respondents are reduced to utilities instead of answers |
 | Human survey / CBC | Observed respondent data | Slower and more expensive, but needed for calibrated decisions |
