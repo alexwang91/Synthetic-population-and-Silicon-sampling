@@ -34,6 +34,7 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Expands soft traits** - initializes media, shopping, psychographic, and category priors with deterministic conditional rules, not LLM-generated stories.
 - **Validates persona coherence** - checks ranges, traces, weights, duplicate IDs, and cross-field consistency before choice simulation.
 - **Normalizes product scenarios** - turns raw A/B/C product descriptions into CBC-style finite choice sets with attributes, outside option, and audit metadata.
+- **Runs deterministic choice baselines** - creates discrete choice rows from enriched personas and normalized scenarios before any LLM interview layer.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -77,13 +78,14 @@ personas_enriched.jsonl
 Persona coherence validation
         |
         v
-Isolated respondent interviews
+Deterministic choice baseline
         |
         v
 choice_results.jsonl
         |
         +--> validation: schema, isolation, confidence, contamination
         +--> bootstrap: intervals and segment lift
+        +--> optional LLM interview explanation layer
         +--> report: readable market story and audit notes
 ```
 
@@ -146,15 +148,29 @@ python skills\weighted-persona-pricing\scripts\product_scenario_normalizer.py `
   --output runs\serbia-demo\normalized_choice_scenario.json `
   --audit runs\serbia-demo\product_scenario_audit.json
 
-# Run country-pack, enrichment, and scenario unit tests
+# Run deterministic discrete-choice baseline
+python skills\weighted-persona-pricing\scripts\run_choice_model.py `
+  runs\serbia-demo\personas_enriched.jsonl `
+  runs\serbia-demo\normalized_choice_scenario.json `
+  --output runs\serbia-demo\choice_results.jsonl `
+  --audit runs\serbia-demo\choice_model_audit.json
+
+# Validate generated choice rows
+python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py `
+  runs\serbia-demo\choice_results.jsonl `
+  --audit runs\serbia-demo\choice_interview_validation.json `
+  --require-controls
+
+# Run country-pack, enrichment, scenario, and choice unit tests
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
 python tests\test_sample_persona_skeletons.py
 python tests\test_expand_soft_traits.py
 python tests\test_validate_persona_coherence.py
 python tests\test_product_scenario_normalizer.py
+python tests\test_run_choice_model.py
 
-# Validate the choice interview contract
+# Validate the existing interview contract tests
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 
@@ -214,6 +230,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/weighted-persona-pricing/scripts/expand_soft_traits.py`](skills/weighted-persona-pricing/scripts/expand_soft_traits.py) | Deterministic soft-trait expansion for pricing-readiness |
 | [`skills/weighted-persona-pricing/scripts/validate_persona_coherence.py`](skills/weighted-persona-pricing/scripts/validate_persona_coherence.py) | Persona-level coherence and consistency validator |
 | [`skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py`](skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py) | CBC-style product scenario normalizer |
+| [`skills/weighted-persona-pricing/scripts/run_choice_model.py`](skills/weighted-persona-pricing/scripts/run_choice_model.py) | Deterministic rule-based random-utility choice baseline |
 | [`skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json`](skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json) | Example A/B smartwatch scenario |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
 | [`skills/weighted-persona-pricing/references/choice-simulation.md`](skills/weighted-persona-pricing/references/choice-simulation.md) | Interview-first product choice workflow |
