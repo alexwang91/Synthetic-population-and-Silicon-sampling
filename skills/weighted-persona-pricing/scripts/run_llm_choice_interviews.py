@@ -5,8 +5,10 @@ This script is the intended synthetic-respondent interview entrypoint. It keeps
 the original product design intact: every selected representative persona can be
 asked the same product choice task and should produce one discrete choice row.
 
-Initial implementation supports prompt export and response normalization. It
-intentionally does not assume a specific LLM provider SDK is available.
+The prompt exporter implements current LLM-survey risk controls: explicit
+choice-role mapping, optional deterministic alternative-order counterbalancing,
+recorded prompt variants, and compact prompts that avoid exposing aggregate
+results or other respondents.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 
-PROMPT_VERSION = "llm_choice_short_v0_1"
+PROMPT_VERSION = "llm_choice_short_v0_2"
 ALLOWED_CHOICES = {"focal_product", "competitor", "none_or_delay"}
 
 
@@ -73,6 +75,10 @@ def numeric(value: Any, default: float = 0.0) -> float:
     return default
 
 
+def stable_int(value: str) -> int:
+    return int(hashlib.sha256(value.encode("utf-8")).hexdigest()[:12], 16)
+
+
 def concise_persona(persona: dict[str, Any], *, include_story: bool, max_story_chars: int) -> dict[str, Any]:
     payload = {
         "persona_id": persona.get("persona_id"),
@@ -87,15 +93,29 @@ def concise_persona(persona: dict[str, Any], *, include_story: bool, max_story_c
     return payload
 
 
-def concise_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
-    alternatives = []
-    for item in scenario.get("alternatives", []):
+def canonical_choice_label(item: dict[str, Any], non_outside_index: int) -> str:
+    if item.get("is_outside_option", False):
+        return "none_or_delay"
+    if non_outside_index == 0:
+        return "focal_product"
+    return "competitor"
+
+
+def base_alternatives(scenario: dict[str, Any]) -> list[dict[str, Any]]:
+    alternatives: list[dict[str, Any]] = []
+    non_outside_index = 0
+    for canonical_position, item in enumerate(scenario.get("alternatives", []), 1):
         if not isinstance(item, dict):
             continue
+        label = canonical_choice_label(item, non_outside_index)
+        if not item.get("is_outside_option", False):
+            non_outside_index += 1
         alternatives.append(
             {
                 "id": item.get("id"),
                 "name": item.get("name"),
+                "canonical_choice_label": label,
+                "canonical_position": canonical_position,
                 "is_outside_option": item.get("is_outside_option", False),
                 "price": item.get("price"),
                 "currency": item.get("currency", scenario.get("currency")),
@@ -105,23 +125,61 @@ def concise_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
                 "raw_attributes": item.get("raw_attributes", {}),
             }
         )
+    return alternatives
+
+
+def counterbalanced_order(alternatives: list[dict[str, Any]], key: str, policy: str) -> list[dict[str, Any]]:
+    if policy == "canonical":
+        ordered = list(alternatives)
+    elif policy == "reverse":
+        product_alts = [alt for alt in alternatives if not alt.get("is_outside_option")]
+        outside = [alt for alt in alternatives if alt.get("is_outside_option")]
+        ordered = list(reversed(product_alts)) + outside
+    elif policy == "rotate":
+        product_alts = [alt for alt in alternatives if not alt.get("is_outside_option")]
+        outside = [alt for alt in alternatives if alt.get("is_outside_option")]
+        if product_alts:
+            shift = stable_int(key) % len(product_alts)
+            ordered = product_alts[shift:] + product_alts[:shift] + outside
+        else:
+            ordered = outside
+    else:
+        raise ValueError("order policy must be one of: canonical, reverse, rotate")
+    result = []
+    for presented_position, alt in enumerate(ordered, 1):
+        copy = dict(alt)
+        copy["presented_position"] = presented_position
+        result.append(copy)
+    return result
+
+
+def concise_scenario(scenario: dict[str, Any], *, persona_id: str, order_policy: str) -> dict[str, Any]:
+    alternatives = counterbalanced_order(base_alternatives(scenario), f"{persona_id}:{scenario.get('scenario_id')}", order_policy)
     return {
         "scenario_id": scenario.get("scenario_id"),
         "category": scenario.get("category"),
         "currency": scenario.get("currency"),
         "choice_task_type": scenario.get("choice_task_type"),
+        "choice_label_rule": "Return the canonical_choice_label of the option you choose; do not infer choice from presented_position.",
+        "order_policy": order_policy,
         "alternatives": alternatives,
     }
 
 
-def prompt_text(persona_payload: dict[str, Any], scenario_payload: dict[str, Any]) -> str:
+def prompt_text(persona_payload: dict[str, Any], scenario_payload: dict[str, Any], *, prompt_variant: str) -> str:
+    variant_line = {
+        "neutral": "Make the choice that best fits this respondent's needs and constraints.",
+        "tradeoff": "Focus on realistic trade-offs across price, brand trust, features, warranty, risk, and outside option.",
+    }[prompt_variant]
     return (
         "You are simulating one isolated synthetic consumer respondent.\n"
-        "Answer only as this respondent. Do not use aggregate shares, quotas, or other respondents.\n"
+        "Answer only as this respondent. Do not use aggregate shares, quotas, target proportions, or other respondents.\n"
         "Choose exactly one option from the product scenario.\n"
+        f"{variant_line}\n"
         "Return strict JSON with keys: choice, chosen_alternative_id, chosen_alternative_name, interview_response, main_drivers, main_barriers, switch_conditions, answer_confidence.\n"
         "Allowed choice values: focal_product, competitor, none_or_delay.\n"
-        "Use focal_product for the first non-outside alternative, competitor for other product alternatives, and none_or_delay for the outside option.\n"
+        "Use the selected option's canonical_choice_label as the choice value. Do not use option order or presented_position to decide the label.\n"
+        "Do not choose an option merely because it is shown first or last.\n"
         "Keep interview_response to 1-3 sentences.\n\n"
         f"PERSONA:\n{json.dumps(persona_payload, ensure_ascii=False, sort_keys=True)}\n\n"
         f"PRODUCT_SCENARIO:\n{json.dumps(scenario_payload, ensure_ascii=False, sort_keys=True)}\n"
@@ -135,22 +193,28 @@ def build_prompt_rows(
     limit: int | None,
     include_story: bool,
     max_story_chars: int,
+    order_policy: str,
+    prompt_variant: str,
 ) -> list[dict[str, Any]]:
-    scenario_payload = concise_scenario(scenario)
     rows: list[dict[str, Any]] = []
     for index, persona in enumerate(iter_jsonl(personas_path), 1):
         if limit is not None and len(rows) >= limit:
             break
         persona_id = str(persona.get("persona_id") or f"row_{index}")
         persona_payload = concise_persona(persona, include_story=include_story, max_story_chars=max_story_chars)
-        task_id = hashlib.sha256(f"{persona_id}:{scenario_payload.get('scenario_id')}:{PROMPT_VERSION}".encode("utf-8")).hexdigest()[:24]
+        scenario_payload = concise_scenario(scenario, persona_id=persona_id, order_policy=order_policy)
+        task_id = hashlib.sha256(f"{persona_id}:{scenario_payload.get('scenario_id')}:{PROMPT_VERSION}:{order_policy}:{prompt_variant}".encode("utf-8")).hexdigest()[:24]
         rows.append(
             {
                 "task_id": task_id,
                 "persona_id": persona_id,
                 "population_weight": numeric(persona.get("population_weight"), 0.0),
                 "prompt_version": PROMPT_VERSION,
-                "prompt": prompt_text(persona_payload, scenario_payload),
+                "prompt_variant": prompt_variant,
+                "order_policy": order_policy,
+                "presented_alternative_order": [alt.get("id") for alt in scenario_payload.get("alternatives", [])],
+                "choice_label_map": {alt.get("id"): alt.get("canonical_choice_label") for alt in scenario_payload.get("alternatives", [])},
+                "prompt": prompt_text(persona_payload, scenario_payload, prompt_variant=prompt_variant),
                 "persona": persona_payload,
                 "scenario_id": scenario_payload.get("scenario_id"),
                 "expected_output_schema": {
@@ -179,8 +243,13 @@ def normalize_list(value: Any) -> list[str]:
 def normalize_response_row(response: dict[str, Any], prompt_by_persona: dict[str, dict[str, Any]]) -> dict[str, Any]:
     persona_id = str(response.get("persona_id") or "")
     prompt_row = prompt_by_persona.get(persona_id, {})
+    choice_label_map = prompt_row.get("choice_label_map", {}) if isinstance(prompt_row.get("choice_label_map"), dict) else {}
+    chosen_id = response.get("chosen_alternative_id")
     choice = str(response.get("choice") or "").strip()
-    if choice not in ALLOWED_CHOICES:
+    mapped_choice = choice_label_map.get(str(chosen_id)) if chosen_id is not None else None
+    if isinstance(mapped_choice, str) and mapped_choice in ALLOWED_CHOICES:
+        choice = mapped_choice
+    elif choice not in ALLOWED_CHOICES:
         choice = "none_or_delay"
     confidence = str(response.get("answer_confidence") or "medium").strip().lower()
     if confidence not in {"high", "medium", "low"}:
@@ -189,7 +258,7 @@ def normalize_response_row(response: dict[str, Any], prompt_by_persona: dict[str
         "persona_id": persona_id,
         "population_weight": numeric(response.get("population_weight"), numeric(prompt_row.get("population_weight"), 0.0)),
         "choice": choice,
-        "chosen_alternative_id": response.get("chosen_alternative_id"),
+        "chosen_alternative_id": chosen_id,
         "chosen_alternative_name": response.get("chosen_alternative_name"),
         "interview_response": str(response.get("interview_response") or ""),
         "main_drivers": normalize_list(response.get("main_drivers")),
@@ -205,6 +274,10 @@ def normalize_response_row(response: dict[str, Any], prompt_by_persona: dict[str
         "generation_controls": {
             "method": "llm_short_choice_interview",
             "prompt_version": PROMPT_VERSION,
+            "prompt_variant": prompt_row.get("prompt_variant"),
+            "order_policy": prompt_row.get("order_policy"),
+            "presented_alternative_order": prompt_row.get("presented_alternative_order"),
+            "choice_label_map": choice_label_map,
             "task_id": response.get("task_id") or prompt_row.get("task_id"),
             "model": response.get("model"),
             "temperature": response.get("temperature"),
@@ -224,8 +297,14 @@ def normalize_responses(prompt_file: Path, response_file: Path, output_file: Pat
     prompt_by_persona = {str(row.get("persona_id")): row for row in prompt_rows}
     output_rows: list[dict[str, Any]] = []
     missing_persona_ids = []
+    choice_remap_count = 0
     for response in iter_jsonl(response_file):
         row = normalize_response_row(response, prompt_by_persona)
+        prompt_row = prompt_by_persona.get(str(response.get("persona_id") or ""), {})
+        choice_label_map = prompt_row.get("choice_label_map", {}) if isinstance(prompt_row.get("choice_label_map"), dict) else {}
+        chosen_id = response.get("chosen_alternative_id")
+        if chosen_id is not None and choice_label_map.get(str(chosen_id)) and response.get("choice") != choice_label_map.get(str(chosen_id)):
+            choice_remap_count += 1
         if not row["persona_id"]:
             missing_persona_ids.append(response.get("_line_number"))
         output_rows.append(row)
@@ -235,6 +314,7 @@ def normalize_responses(prompt_file: Path, response_file: Path, output_file: Pat
         "prompt_count": len(prompt_rows),
         "response_count": len(output_rows),
         "missing_persona_id_rows": missing_persona_ids,
+        "choice_remap_count": choice_remap_count,
         "coverage_rate": (len(output_rows) / len(prompt_rows)) if prompt_rows else 0.0,
         "output": str(output_file),
         "method": "normalize_llm_choice_interview_responses",
@@ -253,8 +333,14 @@ def export_prompts(args: argparse.Namespace) -> int:
         limit=args.limit,
         include_story=args.include_story,
         max_story_chars=args.max_story_chars,
+        order_policy=args.order_policy,
+        prompt_variant=args.prompt_variant,
     )
     write_jsonl(args.output_prompts, rows)
+    order_counts: dict[str, int] = {}
+    for row in rows:
+        key = "|".join(str(item) for item in row.get("presented_alternative_order", []))
+        order_counts[key] = order_counts.get(key, 0) + 1
     audit = {
         "prompt_version": PROMPT_VERSION,
         "mode": "export_prompts",
@@ -264,8 +350,18 @@ def export_prompts(args: argparse.Namespace) -> int:
         "output_prompts": str(args.output_prompts),
         "include_story": args.include_story,
         "max_story_chars": args.max_story_chars,
+        "prompt_variant": args.prompt_variant,
+        "order_policy": args.order_policy,
+        "presented_order_counts": order_counts,
         "llm_provider": "external_batch_or_future_provider_integration",
         "scientific_boundary": "These prompts implement the intended all-persona LLM short choice interview mode; aggregation must still use population_weight over discrete choices.",
+        "risk_controls": [
+            "single_persona_isolation",
+            "explicit_canonical_choice_label_map",
+            "optional_counterbalanced_alternative_order",
+            "recorded_prompt_variant",
+            "no_aggregate_or_target_share_context",
+        ],
     }
     if args.audit:
         write_json(args.audit, audit)
@@ -286,6 +382,8 @@ def parse_args() -> argparse.Namespace:
     export.add_argument("--limit", type=int)
     export.add_argument("--include-story", action="store_true")
     export.add_argument("--max-story-chars", type=int, default=900)
+    export.add_argument("--order-policy", choices=["canonical", "reverse", "rotate"], default="rotate")
+    export.add_argument("--prompt-variant", choices=["neutral", "tradeoff"], default="tradeoff")
 
     normalize = subparsers.add_parser("normalize-responses", help="Normalize external LLM response JSONL to choice_results.jsonl.")
     normalize.add_argument("prompt_file", type=Path)
