@@ -1,0 +1,450 @@
+{
+  "country_identity": {
+    "country_name": "Serbia",
+    "iso2": "RS",
+    "iso3": "SRB",
+    "pack_version": "0.1.0",
+    "population_year": 2022,
+    "preferred_language": "en",
+    "local_languages": ["sr-Latn", "sr-Cyrl"],
+    "currency": "RSD",
+    "build_date": "2026-06-18"
+  },
+  "coverage_scope": {
+    "target_population": "adult_purchase_decision_makers",
+    "base_population_reference": {
+      "value": 6647003,
+      "year": 2022,
+      "source_name": "Statistical Office of the Republic of Serbia, Census 2022",
+      "source_url": "https://www.stat.gov.rs/en-us/vesti/20230428-konacnirezpopisa/?a=0&s=1904",
+      "coverage_note": "Use SORS coverage notes consistently. Several SORS statistical series state that data for AP Kosovo and Metohija are unavailable or excluded after 1999. Downstream reports must state the exact coverage used by each source table."
+    },
+    "sex_distribution_anchor": {
+      "male": {"count": 3231978, "share": 0.486},
+      "female": {"count": 3415025, "share": 0.514}
+    },
+    "use_case": "synthetic consumer panel generation, pricing simulation, product A/B choice, segment lift"
+  },
+  "source_priority": [
+    {
+      "rank": 1,
+      "source_type": "national_statistical_office",
+      "source_name": "Statistical Office of the Republic of Serbia",
+      "source_url": "https://www.stat.gov.rs/",
+      "use_for": ["population", "sex", "education", "computer_literacy", "households", "ICT", "labour", "income"]
+    },
+    {
+      "rank": 2,
+      "source_type": "official_census_portal",
+      "source_name": "Census 2022 Serbia portal",
+      "source_url": "https://popis2022.stat.gov.rs/",
+      "use_for": ["census books", "municipality tables", "regional tables", "education", "literacy", "households"]
+    },
+    {
+      "rank": 3,
+      "source_type": "international_statistical_sources",
+      "source_name": "World Bank / Eurostat / ILO / ITU / UN",
+      "source_url": "https://data.worldbank.org/country/serbia",
+      "use_for": ["fallback population indicators", "international harmonisation", "cross-country comparability"]
+    },
+    {
+      "rank": 4,
+      "source_type": "category_or_product_sources",
+      "source_name": "retail/product pages and market reports",
+      "source_url": "",
+      "use_for": ["product facts only", "category context only", "never hard population weights"]
+    }
+  ],
+  "required_tables": [
+    {
+      "file_name": "census_population_total_sex.csv",
+      "grain": "country x sex",
+      "variables": ["country", "sex", "population_count", "population_share"],
+      "source_name": "Statistical Office of the Republic of Serbia, Census 2022",
+      "source_url": "https://www.stat.gov.rs/en-us/vesti/20230428-konacnirezpopisa/?a=0&s=1904",
+      "source_year": 2022,
+      "coverage_note": "Republic of Serbia Census 2022 final results page.",
+      "official_or_imputed": "official",
+      "required_for_level": "level_0_census",
+      "missing_status": "anchor_values_available",
+      "comments": "Use for total population and sex reconciliation."
+    },
+    {
+      "file_name": "census_region_age_sex.csv",
+      "grain": "region x age_band x sex",
+      "variables": ["region", "age_band", "sex", "population_count"],
+      "source_name": "Statistical Office of the Republic of Serbia / Census 2022 database",
+      "source_url": "https://popis2022.stat.gov.rs/",
+      "source_year": 2022,
+      "coverage_note": "Expected from census dissemination tables or data portal.",
+      "official_or_imputed": "official_expected",
+      "required_for_level": "level_0_census",
+      "missing_status": "needs_download_from_database",
+      "comments": "Core IPF/raking constraint. Do not replace with LLM-generated shares."
+    },
+    {
+      "file_name": "census_education_age_sex_region.csv",
+      "grain": "region x age_band x sex x education_level",
+      "variables": ["region", "age_band", "sex", "education_level", "population_15_plus_count"],
+      "source_name": "Census 2022 Serbia education and literacy release / dissemination database",
+      "source_url": "https://popis2022.stat.gov.rs/en-US/5-vestisaopstenja/news-events/20230731-skolska-sprema-pismenost",
+      "source_year": 2022,
+      "coverage_note": "Education base is population aged 15 and over. Align target population before combining with all-age tables.",
+      "official_or_imputed": "official",
+      "required_for_level": "level_0_census",
+      "missing_status": "anchor_values_available",
+      "comments": "Official anchor values are included; detailed regional table still needs extraction."
+    },
+    {
+      "file_name": "census_computer_literacy_age_sex_region.csv",
+      "grain": "region x age_band x sex x computer_literacy",
+      "variables": ["region", "age_band", "sex", "computer_literacy", "population_15_plus_count"],
+      "source_name": "Census 2022 Serbia education and literacy release / dissemination database",
+      "source_url": "https://popis2022.stat.gov.rs/en-US/5-vestisaopstenja/news-events/20230731-skolska-sprema-pismenost",
+      "source_year": 2022,
+      "coverage_note": "Computer literacy base is population aged 15 and over.",
+      "official_or_imputed": "official",
+      "required_for_level": "level_1_survey",
+      "missing_status": "anchor_values_available",
+      "comments": "Use to condition digital access and online-shopping readiness."
+    },
+    {
+      "file_name": "household_size_region.csv",
+      "grain": "region x household_size",
+      "variables": ["region", "household_size", "household_count", "average_household_size"],
+      "source_name": "Statistical Office of the Republic of Serbia, Census 2022 households by number of members",
+      "source_url": "https://www.stat.gov.rs/en-US/vesti/20230707-domacinstavapremabrclan/?a=0&s=1103",
+      "source_year": 2022,
+      "coverage_note": "Household-level table. Convert carefully when assigning person-level household context.",
+      "official_or_imputed": "official",
+      "required_for_level": "level_0_census",
+      "missing_status": "anchor_values_available",
+      "comments": "Use for household role, family burden, and purchase-decision context."
+    },
+    {
+      "file_name": "ict_usage_individuals.csv",
+      "grain": "country x year x ict_indicator",
+      "variables": ["year", "indicator", "value", "population_base", "digital_access_level", "internet_frequency"],
+      "source_name": "Statistical Office of the Republic of Serbia, Usage ICT - individuals",
+      "source_url": "https://www.stat.gov.rs/en-us/oblasti/upotreba-ikt/upotreba-ikt-pojedinci/",
+      "source_year": 2025,
+      "coverage_note": "Individual ICT survey; age base depends on SORS ICT methodology, typically individuals aged 16-74. Use as soft-trait prior unless aligned to census bands.",
+      "official_or_imputed": "survey",
+      "required_for_level": "level_1_survey",
+      "missing_status": "anchor_values_available",
+      "comments": "Use for internet use, computer use, and social-network priors."
+    },
+    {
+      "file_name": "employment_status_age_sex.csv",
+      "grain": "age_band x sex x employment_status",
+      "variables": ["age_band", "sex", "employment_status", "count_or_share"],
+      "source_name": "SORS census or labour market statistics",
+      "source_url": "https://www.stat.gov.rs/",
+      "source_year": "2022_or_latest",
+      "coverage_note": "Choose census economic activity if available for structural pack; use labour force survey for latest market context.",
+      "official_or_imputed": "official_expected",
+      "required_for_level": "level_0_census",
+      "missing_status": "needs_source_table",
+      "comments": "Required for budget pressure, time scarcity, and category need."
+    },
+    {
+      "file_name": "income_band_region.csv",
+      "grain": "region x income_band",
+      "variables": ["region", "income_band", "household_or_person_count", "year", "income_decile"],
+      "source_name": "SORS household budget / income and living conditions survey",
+      "source_url": "https://www.stat.gov.rs/",
+      "source_year": "latest_available",
+      "coverage_note": "Income distribution may be survey-based rather than census-based.",
+      "official_or_imputed": "official_expected",
+      "required_for_level": "level_1_survey",
+      "missing_status": "needs_source_table",
+      "comments": "If region x income is unavailable, use national income bands plus regional wage adjustment with uncertainty penalty."
+    },
+    {
+      "file_name": "settlement_type_region.csv",
+      "grain": "region x settlement_type",
+      "variables": ["region", "settlement_type", "urban_rural", "population_count"],
+      "source_name": "SORS Census 2022 settlement tables",
+      "source_url": "https://popis2022.stat.gov.rs/",
+      "source_year": 2022,
+      "coverage_note": "Use official settlement classification if available. Avoid generic global urban share when official table exists.",
+      "official_or_imputed": "official_expected",
+      "required_for_level": "level_0_census",
+      "missing_status": "needs_source_table",
+      "comments": "Controls channel access, digital behavior, logistics, and household context."
+    }
+  ],
+  "optional_tables": [
+    {
+      "file_name": "marital_status_age_sex.csv",
+      "grain": "age_band x sex x marital_status",
+      "variables": ["age_band", "sex", "marital_status", "population_count"],
+      "source_name": "SORS Census 2022",
+      "source_url": "https://popis2022.stat.gov.rs/",
+      "source_year": 2022,
+      "coverage_note": "Optional person-level household role refinement.",
+      "official_or_imputed": "official_expected",
+      "required_for_level": "level_0_census",
+      "missing_status": "needs_source_table",
+      "comments": "Improves family decision role modeling."
+    },
+    {
+      "file_name": "consumer_expenditure_category.csv",
+      "grain": "household x expenditure_category",
+      "variables": ["year", "expenditure_category", "value", "household_type"],
+      "source_name": "SORS household budget survey",
+      "source_url": "https://www.stat.gov.rs/",
+      "source_year": "latest_available",
+      "coverage_note": "Survey-based expenditure data.",
+      "official_or_imputed": "survey",
+      "required_for_level": "level_1_survey",
+      "missing_status": "needs_source_table",
+      "comments": "Useful for category-level affordability and price-sensitivity priors."
+    }
+  ],
+  "extracted_anchor_values": {
+    "population_total": {"value": 6647003, "year": 2022, "confidence": "high"},
+    "sex_distribution": {
+      "male_count": 3231978,
+      "male_share": 0.486,
+      "female_count": 3415025,
+      "female_share": 0.514,
+      "confidence": "high"
+    },
+    "education_15_plus": {
+      "population_base": 5691551,
+      "without_or_incomplete_primary_share": 0.0628,
+      "primary_share": 0.178,
+      "secondary_share": 0.5308,
+      "high_or_higher_share": 0.2244,
+      "unknown_share": 0.004,
+      "confidence": "high"
+    },
+    "computer_literacy_15_plus": {
+      "population_base": 5691551,
+      "computer_literate_share": 0.4573,
+      "partial_computer_skills_share": 0.2962,
+      "computer_illiterate_share": 0.2419,
+      "unknown_share": 0.0046,
+      "confidence": "high"
+    },
+    "households": {
+      "private_households_total": 2589344,
+      "average_household_size": 2.55,
+      "one_member_households": 773945,
+      "two_member_households": 711946,
+      "three_member_households": 459926,
+      "four_member_households": 375565,
+      "five_member_households": 156050,
+      "six_or_more_member_households": 111912,
+      "confidence": "high"
+    },
+    "ict_individuals_2025": {
+      "population_base": "individuals, SORS ICT methodology",
+      "internet_use_frequency_share": 0.9,
+      "used_computer_last_three_months_share": 0.718,
+      "internet_population_social_network_account_share": 0.847,
+      "confidence": "high"
+    }
+  },
+  "statistical_constraints": [
+    {
+      "constraint_id": "RS_TOTAL_POP_2022",
+      "type": "official_margin",
+      "variable_set": ["country"],
+      "values_available": true,
+      "geography_level": "country",
+      "population_base": "all residents",
+      "year": 2022,
+      "source": "SORS Census 2022 final results",
+      "confidence": "high",
+      "use_in_ipf": true,
+      "warning_if_used": null
+    },
+    {
+      "constraint_id": "RS_SEX_2022",
+      "type": "official_margin",
+      "variable_set": ["sex"],
+      "values_available": true,
+      "geography_level": "country",
+      "population_base": "all residents",
+      "year": 2022,
+      "source": "SORS Census 2022 final results",
+      "confidence": "high",
+      "use_in_ipf": true,
+      "warning_if_used": null
+    },
+    {
+      "constraint_id": "RS_EDU_15PLUS_2022",
+      "type": "official_margin",
+      "variable_set": ["education_level"],
+      "values_available": true,
+      "geography_level": "country; regional detail expected in database",
+      "population_base": "population aged 15 and over",
+      "year": 2022,
+      "source": "SORS Census 2022 education and literacy release",
+      "confidence": "high",
+      "use_in_ipf": true,
+      "warning_if_used": "Education base is 15+, so align target population before combining with all-age tables."
+    },
+    {
+      "constraint_id": "RS_HOUSEHOLD_SIZE_2022",
+      "type": "official_margin",
+      "variable_set": ["household_size"],
+      "values_available": true,
+      "geography_level": "country; regional detail expected in tables",
+      "population_base": "private households",
+      "year": 2022,
+      "source": "SORS Census 2022 households by number of members",
+      "confidence": "high",
+      "use_in_ipf": true,
+      "warning_if_used": "Household table is household-level, not person-level. Convert carefully when assigning individuals to households."
+    },
+    {
+      "constraint_id": "RS_ICT_2025",
+      "type": "survey_margin",
+      "variable_set": ["internet_frequency", "digital_access_level"],
+      "values_available": true,
+      "geography_level": "country",
+      "population_base": "individuals covered by SORS ICT methodology",
+      "year": 2025,
+      "source": "SORS Usage ICT - individuals",
+      "confidence": "high",
+      "use_in_ipf": false,
+      "warning_if_used": "Use as conditional prior for soft traits, not as hard census weight unless matched to census age bands."
+    },
+    {
+      "constraint_id": "RS_REGION_AGE_SEX_2022",
+      "type": "official_margin",
+      "variable_set": ["region", "age_band", "sex"],
+      "values_available": false,
+      "geography_level": "region",
+      "population_base": "all residents",
+      "year": 2022,
+      "source": "SORS Census 2022 database expected",
+      "confidence": "medium",
+      "use_in_ipf": false,
+      "warning_if_used": "Required before claiming IPF-ready or census-calibrated weighted skeletons."
+    },
+    {
+      "constraint_id": "RS_EMPLOYMENT_AGE_SEX",
+      "type": "unavailable",
+      "variable_set": ["employment_status", "age_band", "sex"],
+      "values_available": false,
+      "geography_level": "unknown",
+      "population_base": "adult or working-age population, to be determined",
+      "year": "2022_or_latest",
+      "source": "SORS census or labour market statistics needed",
+      "confidence": "medium",
+      "use_in_ipf": false,
+      "warning_if_used": "Do not generate employment-conditioned price sensitivity as a calibrated result until this table is attached."
+    },
+    {
+      "constraint_id": "RS_INCOME_REGION",
+      "type": "unavailable",
+      "variable_set": ["income_band", "income_decile", "region"],
+      "values_available": false,
+      "geography_level": "unknown",
+      "population_base": "household or person, to be determined",
+      "year": "latest_available",
+      "source": "SORS household budget or income and living conditions survey needed",
+      "confidence": "medium",
+      "use_in_ipf": false,
+      "warning_if_used": "Do not generate income deciles as calibrated until official or survey-derived income/wage table is attached."
+    },
+    {
+      "constraint_id": "RS_SETTLEMENT_TYPE_REGION_2022",
+      "type": "official_margin",
+      "variable_set": ["region", "settlement_type", "urban_rural"],
+      "values_available": false,
+      "geography_level": "region or municipality",
+      "population_base": "all residents",
+      "year": 2022,
+      "source": "SORS Census 2022 settlement tables expected",
+      "confidence": "medium",
+      "use_in_ipf": false,
+      "warning_if_used": "Required before claiming urban/rural calibrated distribution."
+    }
+  ],
+  "imputation_policy": {
+    "allowed_fields": [
+      {
+        "field": "price_sensitivity",
+        "imputation_allowed": true,
+        "recommended_method": "conditional model using income, household_size, employment, region, category price",
+        "uncertainty_penalty": "high",
+        "allowed_reporting_language": "model-inferred price sensitivity"
+      },
+      {
+        "field": "media_usage",
+        "imputation_allowed": true,
+        "recommended_method": "conditional model using ICT survey, age, education, settlement type",
+        "uncertainty_penalty": "medium",
+        "allowed_reporting_language": "survey-conditioned media prior"
+      },
+      {
+        "field": "childhood_context",
+        "imputation_allowed": true,
+        "recommended_method": "narrative-only generation constrained by age cohort and region",
+        "uncertainty_penalty": "high",
+        "allowed_reporting_language": "illustrative narrative detail only"
+      },
+      {
+        "field": "ethnicity_based_purchase_behavior",
+        "imputation_allowed": false,
+        "recommended_method": "do not impute",
+        "uncertainty_penalty": "not_applicable",
+        "allowed_reporting_language": "not allowed for discriminatory pricing"
+      }
+    ],
+    "forbidden_behavior": [
+      "Do not let LLM-generated stories modify population_weight.",
+      "Do not use narrative-only fields as statistical constraints.",
+      "Do not report high-order segment lift if only low-order margins are fitted."
+    ]
+  },
+  "quality_checks": {
+    "required_before_panel_generation": [
+      "total_population_reconciliation",
+      "sex_distribution_fit",
+      "region_distribution_fit",
+      "age_sex_fit",
+      "education_fit",
+      "household_size_fit",
+      "urban_rural_fit_if_available",
+      "source_metadata_completeness",
+      "missing_table_report"
+    ],
+    "required_before_pricing_report": [
+      "choice_record_contract_validation",
+      "weighted_bootstrap_intervals",
+      "segment_effective_sample_size_check",
+      "high_imputation_field_report",
+      "calibration_level_disclosure"
+    ]
+  },
+  "build_status": {
+    "status": "anchor_ready",
+    "current_calibration_level": "level_0_partial_plus_level_1_ict_anchors",
+    "can_generate_demo_panel": true,
+    "can_claim_census_calibrated_panel": false,
+    "reason_census_claim_not_ready": [
+      "region x age x sex table not yet attached",
+      "settlement type table not yet attached",
+      "employment status table not yet attached",
+      "income table not yet attached",
+      "marginal fit report not yet computed"
+    ]
+  },
+  "next_actions": [
+    "Download or query SORS Census 2022 table for region x age x sex.",
+    "Download or query SORS table for settlement type by region or municipality.",
+    "Download or query education table by region, age, sex.",
+    "Attach household-size-by-region table from Census 2022.",
+    "Attach employment or economic activity table by age and sex.",
+    "Attach income/wage or household-budget distribution table.",
+    "Run IPF/raking to create statistical_cells.parquet.",
+    "Generate 1000 and 10000 weighted skeletons only as demo until IPF readiness is reached.",
+    "Run marginal_fit_report.json before adding soft traits or stories."
+  ]
+}
