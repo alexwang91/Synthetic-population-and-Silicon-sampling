@@ -31,8 +31,10 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
             self.assertEqual(manifest["status"], "passed")
-            self.assertEqual(manifest["method"], "deterministic_reproducible_scenario_pipeline")
+            self.assertEqual(manifest["method"], "synthetic_respondent_scenario_pipeline")
+            self.assertEqual(manifest["interview_engine"], "rule_based_baseline")
             self.assertFalse(manifest["scientific_boundary"]["pipeline_changes_model_outputs"])
+            self.assertIn("original_plan_alignment", manifest["scientific_boundary"])
             self.assertIn("report_policy", manifest["scientific_boundary"])
             self.assertIn("token_policy", manifest["scientific_boundary"])
             self.assertIn("acceptance_policy", manifest["scientific_boundary"])
@@ -106,6 +108,37 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertFalse((run_dir / "choice_results.jsonl").exists())
             self.assertFalse((run_dir / "market_report.md").exists())
             self.assertFalse((run_dir / "pipeline_artifact_validation.json").exists())
+
+    def test_llm_short_all_exports_prompts_and_awaits_responses(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            config = json.loads(CONFIG.read_text(encoding="utf-8"))
+            config["run_id"] = "serbia_llm_prompt_export_demo"
+            config["interview_engine"] = "llm_short_all"
+            config["llm_prompt_limit"] = 5
+            config_path = tmp / "llm_config.json"
+            config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            output_root = tmp / "runs"
+            result = subprocess.run(
+                [sys.executable, str(PIPELINE), str(config_path), "--output-root", str(output_root)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+
+            run_dir = output_root / "serbia_llm_prompt_export_demo"
+            manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["status"], "awaiting_llm_responses")
+            self.assertEqual(manifest["interview_engine"], "llm_short_all")
+            step_names = [step["step"] for step in manifest["steps"]]
+            self.assertIn("export_llm_choice_prompts", step_names)
+            self.assertNotIn("run_choice_model", step_names)
+            self.assertTrue((run_dir / "llm_choice_prompts.jsonl").exists())
+            self.assertTrue((run_dir / "llm_choice_prompt_audit.json").exists())
+            self.assertFalse((run_dir / "choice_results.jsonl").exists())
+            prompts = [line for line in (run_dir / "llm_choice_prompts.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertEqual(len(prompts), 5)
 
 
 if __name__ == "__main__":
