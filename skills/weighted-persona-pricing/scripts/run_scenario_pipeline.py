@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
-"""Run the deterministic synthetic market-research scenario pipeline.
+"""Run the synthetic market-research scenario pipeline.
 
 This orchestrator wires existing audited steps together. It does not alter
 statistical weights, soft traits, product normalization, or choice logic.
+
+The pipeline supports two choice-generation engines:
+
+- rule_based_baseline: deterministic development baseline and CI smoke path.
+- llm_short_all: intended synthetic respondent mode; exports one isolated short
+  interview prompt per selected representative persona, then optionally
+  normalizes external LLM batch responses into choice_results.jsonl.
 
 The pipeline writes every intermediate artifact into a run directory and
 records a manifest with command, input, output, and status metadata for each
@@ -21,6 +28,7 @@ from typing import Any
 
 
 PIPELINE_VERSION = "0.1.0"
+ALLOWED_INTERVIEW_ENGINES = {"rule_based_baseline", "llm_short_all"}
 
 
 def repo_root() -> Path:
@@ -50,6 +58,12 @@ def resolve_path(path_value: str | Path, *, base_dir: Path) -> Path:
     if candidate.exists():
         return candidate.resolve()
     return (repo_root() / path).resolve()
+
+
+def maybe_resolve_path(path_value: str | Path | None, *, base_dir: Path) -> Path | None:
+    if path_value is None:
+        return None
+    return resolve_path(path_value, base_dir=base_dir)
 
 
 def script_path(relative: str) -> Path:
@@ -123,6 +137,9 @@ def validate_config(config: dict[str, Any]) -> None:
     price_index = config["category_price_index"]
     if not isinstance(price_index, (int, float)) or not 0 <= float(price_index) <= 1:
         raise ValueError("category_price_index must be a number in [0,1]")
+    engine = config.get("interview_engine", "rule_based_baseline")
+    if engine not in ALLOWED_INTERVIEW_ENGINES:
+        raise ValueError(f"interview_engine must be one of {sorted(ALLOWED_INTERVIEW_ENGINES)}")
 
 
 def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, stop_after: str | None) -> dict[str, Any]:
@@ -134,14 +151,18 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
 
     country_pack = resolve_path(config["country_pack"], base_dir=config_base)
     product_scenario = resolve_path(config["product_scenario"], base_dir=config_base)
+    llm_response_file = maybe_resolve_path(config.get("llm_response_file"), base_dir=config_base)
     if not country_pack.exists():
         raise FileNotFoundError(f"country pack does not exist: {country_pack}")
     if not product_scenario.exists():
         raise FileNotFoundError(f"product scenario does not exist: {product_scenario}")
+    if llm_response_file is not None and not llm_response_file.exists():
+        raise FileNotFoundError(f"llm_response_file does not exist: {llm_response_file}")
 
     dimension_json = run_dir / "dimensions.json"
     write_dimension_json(config["dimensions"], dimension_json)
     margins = build_margin_file(config, run_dir, config_base)
+    interview_engine = str(config.get("interview_engine", "rule_based_baseline"))
 
     outputs = {
         "seed_cells": run_dir / "seed_cells.jsonl",
@@ -157,6 +178,9 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "product_scenario_audit": run_dir / "product_scenario_audit.json",
         "choice_results": run_dir / "choice_results.jsonl",
         "choice_model_audit": run_dir / "choice_model_audit.json",
+        "llm_choice_prompts": run_dir / "llm_choice_prompts.jsonl",
+        "llm_choice_prompt_audit": run_dir / "llm_choice_prompt_audit.json",
+        "llm_choice_interview_audit": run_dir / "llm_choice_interview_audit.json",
         "choice_interview_validation": run_dir / "choice_interview_validation.json",
         "bootstrap_intervals": run_dir / "bootstrap_intervals.json",
         "market_report_md": run_dir / "market_report.md",
@@ -189,8 +213,36 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
     if add_step("product_scenario_normalizer", [py, str(script_path("skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py")), str(product_scenario), "--output", str(outputs["normalized_choice_scenario"]), "--audit", str(outputs["product_scenario_audit"])]):
         return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
-    if add_step("run_choice_model", [py, str(script_path("skills/weighted-persona-pricing/scripts/run_choice_model.py")), str(outputs["personas_enriched"]), str(outputs["normalized_choice_scenario"]), "--output", str(outputs["choice_results"]), "--audit", str(outputs["choice_model_audit"]), "--mode", str(config.get("choice_mode", "argmax")), "--temperature", str(config.get("choice_temperature", 0.35))]):
-        return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+
+    if interview_engine == "rule_based_baseline":
+        if add_step("run_choice_model", [py, str(script_path("skills/weighted-persona-pricing/scripts/run_choice_model.py")), str(outputs["personas_enriched"]), str(outputs["normalized_choice_scenario"]), "--output", str(outputs["choice_results"]), "--audit", str(outputs["choice_model_audit"]), "--mode", str(config.get("choice_mode", "argmax")), "--temperature", str(config.get("choice_temperature", 0.35))]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+    elif interview_engine == "llm_short_all":
+        export_command = [
+            py,
+            str(script_path("skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py")),
+            "export-prompts",
+            str(outputs["personas_enriched"]),
+            str(outputs["normalized_choice_scenario"]),
+            "--output-prompts",
+            str(outputs["llm_choice_prompts"]),
+            "--audit",
+            str(outputs["llm_choice_prompt_audit"]),
+        ]
+        if config.get("llm_prompt_limit"):
+            export_command.extend(["--limit", str(config["llm_prompt_limit"])])
+        if config.get("include_story_in_llm_prompt", False):
+            export_command.append("--include-story")
+            export_command.extend(["--max-story-chars", str(config.get("max_story_chars", 900))])
+        if add_step("export_llm_choice_prompts", export_command):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        if llm_response_file is None:
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="awaiting_llm_responses")
+        if add_step("normalize_llm_choice_responses", [py, str(script_path("skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py")), "normalize-responses", str(outputs["llm_choice_prompts"]), str(llm_response_file), "--output", str(outputs["choice_results"]), "--audit", str(outputs["llm_choice_interview_audit"])]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+    else:
+        raise ValueError(f"unsupported interview_engine: {interview_engine}")
+
     if add_step("validate_choice_interviews", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_choice_interviews.py")), str(outputs["choice_results"]), "--audit", str(outputs["choice_interview_validation"]), "--require-controls"]):
         return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
 
@@ -224,12 +276,14 @@ def finalize_manifest(
     *,
     status: str,
 ) -> dict[str, Any]:
+    interview_engine = str(config.get("interview_engine", "rule_based_baseline"))
     manifest = {
         "pipeline_version": PIPELINE_VERSION,
         "status": status,
         "run_id": config["run_id"],
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "method": "deterministic_reproducible_scenario_pipeline",
+        "method": "synthetic_respondent_scenario_pipeline",
+        "interview_engine": interview_engine,
         "inputs": {
             "country_pack": str(country_pack),
             "product_scenario": str(product_scenario),
@@ -238,21 +292,23 @@ def finalize_manifest(
             "sample_size": config["sample_size"],
             "category": config["category"],
             "category_price_index": config["category_price_index"],
+            "llm_response_file": config.get("llm_response_file"),
         },
         "outputs": {key: str(value) for key, value in outputs.items() if value.exists()},
         "steps": steps,
         "scientific_boundary": {
             "pipeline_changes_model_outputs": False,
-            "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
+            "choice_model_calibration_level": "uncalibrated_rule_based_baseline" if interview_engine == "rule_based_baseline" else "synthetic_llm_respondent_uncalibrated",
             "provenance_policy": "all major intermediate artifacts and audit files are retained",
             "report_policy": "market_report.md is an optional summary surface; complete dashboard data stays in JSON/JSONL artifacts",
-            "token_policy": "deterministic pipeline stages do not call LLMs; future LLM layers should operate on sampled or aggregated artifacts, not all 10k/1k/100 row-level records in one prompt",
+            "token_policy": "llm_short_all may ask every selected representative persona one short isolated choice prompt; never summarize all raw row-level interviews in one LLM prompt",
             "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and optional report-length warnings",
+            "original_plan_alignment": "representative weighted respondents each produce a discrete choice; rule_based_baseline is only an auxiliary baseline, while llm_short_all is the intended synthetic respondent mode",
             "limitations": [
-                "The pipeline orchestrates deterministic components and does not make outputs decision-grade.",
                 "Country pack quality and margin validity determine the statistical credibility of generated personas.",
-                "Choice model coefficients are heuristic until calibrated against CBC, survey, sales, clickstream, or experiment data.",
-                "LLM narrative or interview layers should be added only after preserving row-level isolation and audit controls.",
+                "Rule-based choices are for development, CI, and comparison; they are not the intended final synthetic respondent simulator.",
+                "LLM short-choice rows are synthetic respondent outputs, not observed consumer behavior.",
+                "Decision-grade accuracy requires calibration against CBC, survey, sales, clickstream, or experiment data.",
             ],
         },
     }
@@ -274,6 +330,8 @@ def parse_args() -> argparse.Namespace:
         "validate_persona_coherence",
         "product_scenario_normalizer",
         "run_choice_model",
+        "export_llm_choice_prompts",
+        "normalize_llm_choice_responses",
         "validate_choice_interviews",
         "bootstrap_choice_intervals",
         "generate_market_report",
@@ -290,7 +348,7 @@ def main() -> int:
     if args.manifest:
         write_json(args.manifest, manifest)
     print(json.dumps({"run_id": manifest["run_id"], "status": manifest["status"], "manifest": str(Path(args.output_root) / manifest["run_id"] / "manifest.json")}, ensure_ascii=False, indent=2))
-    return 0 if manifest["status"] in {"passed", "stopped"} else 1
+    return 0 if manifest["status"] in {"passed", "stopped", "awaiting_llm_responses"} else 1
 
 
 if __name__ == "__main__":
