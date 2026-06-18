@@ -44,6 +44,9 @@
   "generate_report": true,
   "report_max_reasons": 5,
   "report_max_artifacts": 18,
+  "generate_dashboard_data": true,
+  "dashboard_max_reasons": 12,
+  "dashboard_max_artifacts": 40,
   "validate_artifacts": true,
   "max_report_lines": 0
 }
