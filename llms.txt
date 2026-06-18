@@ -1,10 +1,11 @@
 # Synthetic Population and Silicon Sampling
 
-Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, scenario pipeline orchestration, concise market reports, pipeline artifact validation, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
+Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
 ## Start Here
 
 - README: `README.md`
+- Check runner: `scripts/run_all_checks.py`
 - Country pack skill entrypoint: `skills/country-pack-builder/SKILL.md`
 - Country pack build prompt: `skills/country-pack-builder/prompts/build_country_pack.md`
 - Country pack builder script: `skills/country-pack-builder/scripts/build_country_pack.py`
@@ -38,8 +39,10 @@ Private research prototype for census-weighted synthetic respondents, country st
 - Use `product_scenario_normalizer.py` to create finite CBC-style choice sets with mutually exclusive alternatives and an outside option before any choice model.
 - Use `run_choice_model.py` as an uncalibrated rule-based random-utility baseline only; utilities and probabilities are diagnostics, while the row-level output must remain a discrete choice.
 - Use `run_scenario_pipeline.py` to orchestrate existing audited steps; it should not add new model assumptions or silently modify artifacts.
-- Use `generate_market_report.py` for concise reports only; do not paste row-level personas, choices, or large artifacts into report text.
-- Use `validate_pipeline_artifacts.py` as the final acceptance check for a run folder; missing artifacts, failed audits, invalid JSON, or overlong reports should block delivery.
+- Use `generate_market_report.py` for summary/report surfaces; do not paste row-level personas, choices, or large artifacts into report text or LLM context.
+- Report length is not a default hard limit. `--max-report-lines` on `validate_pipeline_artifacts.py` is warning-only unless `--fail-on-warning` is used.
+- Use `validate_pipeline_artifacts.py` as the final acceptance check for a run folder; missing artifacts, failed audits, or invalid JSON should block delivery.
+- Current deterministic pipeline stages do not call LLMs per persona. Future LLM layers should operate on sampled or aggregated artifacts, not all 10k/1k/100 row-level records in one prompt.
 - Person-level output must be a discrete `choice`, not only probabilities.
 - Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
 - LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
@@ -49,6 +52,8 @@ Private research prototype for census-weighted synthetic respondents, country st
 ## Useful Commands
 
 ```powershell
+python scripts\run_all_checks.py
+python scripts\run_all_checks.py --include-slow
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py skills\weighted-persona-pricing\examples\serbia_smartwatch_pipeline_config.json --output-root runs
 python skills\weighted-persona-pricing\scripts\generate_market_report.py runs\serbia_smartwatch_pipeline_demo\manifest.json
 python skills\weighted-persona-pricing\scripts\validate_pipeline_artifacts.py runs\serbia_smartwatch_pipeline_demo\manifest.json --audit runs\serbia_smartwatch_pipeline_demo\pipeline_artifact_validation.json
