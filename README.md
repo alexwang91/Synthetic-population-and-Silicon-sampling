@@ -36,6 +36,7 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Normalizes product scenarios** - turns raw A/B/C product descriptions into CBC-style finite choice sets with attributes, outside option, and audit metadata.
 - **Runs deterministic choice baselines** - creates discrete choice rows from enriched personas and normalized scenarios before any LLM interview layer.
 - **Runs full scenario pipelines** - wires the audited steps together from config and writes a manifest with step commands, outputs, and scientific boundaries.
+- **Generates concise market reports** - summarizes audit status, weighted choice shares, uncertainty intervals, drivers, barriers, and limitations without copying row-level data.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -86,8 +87,8 @@ choice_results.jsonl
         |
         +--> validation: schema, isolation, confidence, contamination
         +--> bootstrap: intervals and segment lift
+        +--> concise report: market_report.md / market_report.json
         +--> optional LLM interview explanation layer
-        +--> report: readable market story and audit notes
 ```
 
 The same flow can be run from a single config with `run_scenario_pipeline.py`, which preserves all intermediate files and writes `manifest.json` for provenance.
@@ -99,10 +100,15 @@ The important boundary: respondents answer as people; statistics aggregate after
 The prototype uses only the Python standard library.
 
 ```powershell
-# Run the full deterministic Serbia smartwatch demo pipeline from config
+# Run the full deterministic Serbia smartwatch demo pipeline from config.
+# This emits manifest.json, choice_results.jsonl, bootstrap_intervals.json, market_report.md, and market_report.json.
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py `
   skills\weighted-persona-pricing\examples\serbia_smartwatch_pipeline_config.json `
   --output-root runs
+
+# Regenerate the concise report from an existing run manifest
+python skills\weighted-persona-pricing\scripts\generate_market_report.py `
+  runs\serbia_smartwatch_pipeline_demo\manifest.json
 
 # Build a generic country-pack skeleton
 python skills\country-pack-builder\scripts\build_country_pack.py `
@@ -169,7 +175,7 @@ python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py `
   --audit runs\serbia-demo\choice_interview_validation.json `
   --require-controls
 
-# Run country-pack, enrichment, scenario, choice, and pipeline unit tests
+# Run country-pack, enrichment, scenario, choice, pipeline, and report unit tests
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
 python tests\test_sample_persona_skeletons.py
@@ -241,6 +247,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py`](skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py) | CBC-style product scenario normalizer |
 | [`skills/weighted-persona-pricing/scripts/run_choice_model.py`](skills/weighted-persona-pricing/scripts/run_choice_model.py) | Deterministic rule-based random-utility choice baseline |
 | [`skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py`](skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py) | End-to-end deterministic scenario pipeline runner |
+| [`skills/weighted-persona-pricing/scripts/generate_market_report.py`](skills/weighted-persona-pricing/scripts/generate_market_report.py) | Concise market report generator from pipeline manifest |
 | [`skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json`](skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json) | Example A/B smartwatch scenario |
 | [`skills/weighted-persona-pricing/examples/serbia_smartwatch_pipeline_config.json`](skills/weighted-persona-pricing/examples/serbia_smartwatch_pipeline_config.json) | Example full pipeline config |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
