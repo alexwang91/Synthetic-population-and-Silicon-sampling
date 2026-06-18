@@ -50,7 +50,8 @@ def make_minimal_run(run_dir: Path) -> None:
             "scientific_boundary": {
                 "pipeline_changes_model_outputs": False,
                 "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
-                "report_policy": "concise",
+                "report_policy": "dashboard artifacts separate from text report",
+                "token_policy": "do not place row-level artifacts in LLM context",
                 "limitations": ["synthetic hypotheses only"],
             },
         },
@@ -86,6 +87,7 @@ class PipelineArtifactValidatorTest(unittest.TestCase):
             summary = json.loads(audit.read_text(encoding="utf-8"))
             self.assertTrue(summary["passes_pipeline_artifact_validation"])
             self.assertEqual(summary["error_count"], 0)
+            self.assertEqual(summary["report_length_policy"], "disabled")
 
     def test_missing_required_artifact_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -104,6 +106,25 @@ class PipelineArtifactValidatorTest(unittest.TestCase):
             self.assertFalse(summary["passes_pipeline_artifact_validation"])
             issues = {item["issue"] for item in summary["errors"]}
             self.assertIn("missing_or_empty_required_output", issues)
+
+    def test_report_line_limit_is_warning_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = Path(tmpdir) / "fake_run"
+            make_minimal_run(run_dir)
+            write_text(run_dir / "market_report.md", "\n".join(["# Market Report: fake_run"] + ["line"] * 50))
+            audit = run_dir / "pipeline_artifact_validation.json"
+            result = subprocess.run(
+                [sys.executable, str(VALIDATOR), str(run_dir), "--audit", str(audit), "--max-report-lines", "10"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+            summary = json.loads(audit.read_text(encoding="utf-8"))
+            self.assertTrue(summary["passes_pipeline_artifact_validation"])
+            self.assertEqual(summary["report_length_policy"], "warning_only")
+            issues = {item["issue"] for item in summary["warnings"]}
+            self.assertIn("market_report_long", issues)
 
 
 if __name__ == "__main__":
