@@ -31,6 +31,7 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Creates seed statistical cells** - turns an audited country pack plus explicit dimensions into a seed grid for raking.
 - **Runs IPF/raking** - fits seed cells to supplied official or survey margin targets and writes weighted cells.
 - **Samples persona skeletons** - uses deterministic largest-remainder allocation to convert weighted cells into exact-size `personas_core.jsonl` panels.
+- **Expands soft traits** - initializes media, shopping, psychographic, and category priors with deterministic conditional rules, not LLM-generated stories.
 - **Builds weighted synthetic panels** - separates hard demographics, inferred soft traits, narrative stories, and audit metadata.
 - **Runs identity-first choice interviews** - each respondent outputs one discrete `choice`, a natural answer, drivers, barriers, and switch conditions.
 - **Avoids score-table substitution** - probabilities and utility scores are diagnostics only; market share is aggregated from respondent choices.
@@ -63,7 +64,10 @@ Persona skeleton sampling
 personas_core.jsonl
         |
         v
-Soft-trait expansion with documented assumptions
+Deterministic soft-trait expansion
+        |
+        v
+personas_enriched.jsonl
         |
         v
 Isolated respondent interviews
@@ -116,10 +120,19 @@ python skills\country-pack-builder\scripts\sample_persona_skeletons.py `
   --output runs\serbia-demo\personas_core.jsonl `
   --audit runs\serbia-demo\persona_sampling_audit.json
 
-# Run country-pack unit tests
+# Expand deterministic soft traits for pricing simulation readiness
+python skills\weighted-persona-pricing\scripts\expand_soft_traits.py `
+  runs\serbia-demo\personas_core.jsonl `
+  --category smartwatch `
+  --category-price-index 0.7 `
+  --output runs\serbia-demo\personas_enriched.jsonl `
+  --audit runs\serbia-demo\soft_trait_audit.json
+
+# Run country-pack and enrichment unit tests
 python tests\test_country_pack_builder.py
 python tests\test_country_pack_ipf_pipeline.py
 python tests\test_sample_persona_skeletons.py
+python tests\test_expand_soft_traits.py
 
 # Validate the choice interview contract
 python tests\test_choice_interview_validator.py
@@ -178,6 +191,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/country-pack-builder/scripts/sample_persona_skeletons.py`](skills/country-pack-builder/scripts/sample_persona_skeletons.py) | Exact-size weighted persona skeleton sampler |
 | [`skills/country-pack-builder/examples/RS_country_pack_v0_1.json`](skills/country-pack-builder/examples/RS_country_pack_v0_1.json) | Serbia anchor-ready example pack |
 | [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Weighted persona pricing skill entrypoint |
+| [`skills/weighted-persona-pricing/scripts/expand_soft_traits.py`](skills/weighted-persona-pricing/scripts/expand_soft_traits.py) | Deterministic soft-trait expansion for pricing-readiness |
 | [`skills/weighted-persona-pricing/references/interview-quality-controls.md`](skills/weighted-persona-pricing/references/interview-quality-controls.md) | Isolation, seed/temperature, schema, confidence, test-retest, prompt sensitivity, judge rules |
 | [`skills/weighted-persona-pricing/references/choice-simulation.md`](skills/weighted-persona-pricing/references/choice-simulation.md) | Interview-first product choice workflow |
 | [`skills/weighted-persona-pricing/scripts/validate_choice_interviews.py`](skills/weighted-persona-pricing/scripts/validate_choice_interviews.py) | Choice-row schema and contamination validator |
