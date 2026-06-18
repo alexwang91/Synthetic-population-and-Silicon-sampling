@@ -7,6 +7,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 - README: `README.md`
 - Country pack skill entrypoint: `skills/country-pack-builder/SKILL.md`
 - Country pack build prompt: `skills/country-pack-builder/prompts/build_country_pack.md`
+- Country pack builder script: `skills/country-pack-builder/scripts/build_country_pack.py`
 - Country pack validator: `skills/country-pack-builder/scripts/validate_country_pack.py`
 - Weighted persona pricing skill entrypoint: `skills/weighted-persona-pricing/SKILL.md`
 - Interview QA rules: `skills/weighted-persona-pricing/references/interview-quality-controls.md`
@@ -18,6 +19,7 @@ Private research prototype for census-weighted synthetic respondents, country st
 
 - Build or audit a country pack before claiming census-calibrated weighted personas.
 - Country packs must separate official margins, survey margins, derived margins, imputed priors, and unavailable constraints.
+- Use `build_country_pack.py` for a structural skeleton only; it does not fetch or verify official source tables.
 - Person-level output must be a discrete `choice`, not only probabilities.
 - Respondents must not see previous answers, aggregate shares, quotas, or target proportions.
 - LLM respondent rows should include `isolation`, `generation_controls`, and `quality_controls`.
@@ -27,7 +29,9 @@ Private research prototype for census-weighted synthetic respondents, country st
 ## Useful Commands
 
 ```powershell
+python skills\country-pack-builder\scripts\build_country_pack.py --country-name Serbia --iso2 RS --iso3 SRB --population-year 2022 --nso-name "Statistical Office of the Republic of Serbia" --nso-url "https://www.stat.gov.rs/" --total-population 6647003 --male-count 3231978 --female-count 3415025 --output country_packs\RS\metadata.json
 python skills\country-pack-builder\scripts\validate_country_pack.py skills\country-pack-builder\examples\RS_country_pack_v0_1.json
+python tests\test_country_pack_builder.py
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
