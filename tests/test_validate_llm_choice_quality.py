@@ -103,7 +103,7 @@ class LLMChoiceQualityValidatorTest(unittest.TestCase):
             self.assertIn("choice_distribution", summary)
             self.assertGreaterEqual(summary["choice_distribution"]["normalized_entropy"], 0.9)
 
-    def test_single_choice_collapse_fails(self) -> None:
+    def test_single_choice_collapse_warns_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             personas = tmp / "personas.jsonl"
@@ -114,6 +114,27 @@ class LLMChoiceQualityValidatorTest(unittest.TestCase):
             write_jsonl(choices, [make_choice_row(row["persona_id"], "focal_product", "A", ["A", "B", "none"]) for row in persona_rows])
             result = subprocess.run(
                 [sys.executable, str(VALIDATOR), str(personas), str(choices), "--audit", str(audit)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+            summary = load_json(audit)
+            self.assertTrue(summary["passes_llm_choice_quality_validation"])
+            issues = {item["issue"] for item in summary["warnings"]}
+            self.assertIn("choice_collapse_single_option", issues)
+
+    def test_single_choice_collapse_can_fail_when_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            personas = tmp / "personas.jsonl"
+            choices = tmp / "choices.jsonl"
+            audit = tmp / "audit.json"
+            persona_rows = make_personas()
+            write_jsonl(personas, persona_rows)
+            write_jsonl(choices, [make_choice_row(row["persona_id"], "focal_product", "A", ["A", "B", "none"]) for row in persona_rows])
+            result = subprocess.run(
+                [sys.executable, str(VALIDATOR), str(personas), str(choices), "--audit", str(audit), "--fail-on-collapse"],
                 cwd=REPO_ROOT,
                 capture_output=True,
                 text=True,
