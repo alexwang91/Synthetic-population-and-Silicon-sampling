@@ -34,6 +34,7 @@ def make_minimal_run(run_dir: Path) -> None:
         "bootstrap_intervals": str(run_dir / "bootstrap_intervals.json"),
         "market_report_md": str(run_dir / "market_report.md"),
         "market_report_json": str(run_dir / "market_report.json"),
+        "dashboard_data": str(run_dir / "dashboard_data.json"),
         "ipf_audit": str(run_dir / "ipf_audit.json"),
         "persona_sampling_audit": str(run_dir / "persona_sampling_audit.json"),
         "soft_trait_audit": str(run_dir / "soft_trait_audit.json"),
@@ -45,6 +46,7 @@ def make_minimal_run(run_dir: Path) -> None:
         {
             "status": "passed",
             "run_id": "fake_run",
+            "interview_engine": "rule_based_baseline",
             "outputs": outputs,
             "steps": [{"step": "fake", "returncode": 0}],
             "scientific_boundary": {
@@ -52,6 +54,8 @@ def make_minimal_run(run_dir: Path) -> None:
                 "choice_model_calibration_level": "uncalibrated_rule_based_baseline",
                 "report_policy": "dashboard artifacts separate from text report",
                 "token_policy": "do not place row-level artifacts in LLM context",
+                "original_plan_alignment": "representative weighted respondents each produce a discrete choice",
+                "llm_risk_controls": ["none for rule-based baseline"],
                 "limitations": ["synthetic hypotheses only"],
             },
         },
@@ -68,6 +72,7 @@ def make_minimal_run(run_dir: Path) -> None:
     write_json(Path(outputs["persona_coherence_audit"]), {"passes_persona_coherence": True, "error_count": 0, "warning_count": 0})
     write_json(Path(outputs["product_scenario_audit"]), {"passes_product_scenario_normalization": True, "alternative_count": 2, "outside_option_included": True, "error_count": 0})
     write_json(Path(outputs["market_report_json"]), {"run_id": "fake_run", "choice_shares": [{"choice": "focal_product", "share": 0.6}], "limitations": ["synthetic hypotheses only"]})
+    write_json(Path(outputs["dashboard_data"]), {"run": {"run_id": "fake_run"}, "results": {"choice_shares": []}, "quality": {"cards": []}})
     write_text(Path(outputs["market_report_md"]), "# Market Report: fake_run\n\n## Executive Summary\n\n## Choice Results\n\n## Audit Status\n\n## Method Boundary\n")
 
 
