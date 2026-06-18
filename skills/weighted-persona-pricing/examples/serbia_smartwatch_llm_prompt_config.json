@@ -1,0 +1,50 @@
+{
+  "run_id": "serbia_smartwatch_llm_prompt_demo",
+  "country_pack": "skills/country-pack-builder/examples/RS_country_pack_v0_1.json",
+  "dimensions": {
+    "region": ["Belgrade", "Vojvodina"],
+    "sex": ["male", "female"],
+    "education_level": ["secondary", "tertiary"],
+    "income_decile": ["3", "8"],
+    "settlement_type": ["urban", "rural"],
+    "employment_status": ["employed", "unemployed"]
+  },
+  "margins_inline": {
+    "separator": "|",
+    "margins": [
+      {
+        "name": "region",
+        "variables": ["region"],
+        "targets": {
+          "Belgrade": 60.0,
+          "Vojvodina": 40.0
+        }
+      },
+      {
+        "name": "sex",
+        "variables": ["sex"],
+        "targets": {
+          "male": 45.0,
+          "female": 55.0
+        }
+      }
+    ]
+  },
+  "sample_size": 40,
+  "product_scenario": "skills/weighted-persona-pricing/examples/smartwatch_product_scenario.json",
+  "category": "smartwatch",
+  "category_price_index": 0.7,
+  "interview_engine": "llm_short_all",
+  "llm_prompt_limit": 40,
+  "include_story_in_llm_prompt": false,
+  "max_story_chars": 900,
+  "ipf_iterations": 50,
+  "ipf_tolerance": 1e-9,
+  "bootstrap_iterations": 30,
+  "bootstrap_seed": 20260618,
+  "generate_report": true,
+  "report_max_reasons": 5,
+  "report_max_artifacts": 18,
+  "validate_artifacts": true,
+  "max_report_lines": 0
+}
