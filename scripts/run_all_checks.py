@@ -33,6 +33,7 @@ FAST_CHECKS = [
     Check("product_scenario_normalizer", [sys.executable, "tests/test_product_scenario_normalizer.py"]),
     Check("choice_model", [sys.executable, "tests/test_run_choice_model.py"]),
     Check("llm_choice_interviews", [sys.executable, "tests/test_run_llm_choice_interviews.py"]),
+    Check("llm_choice_quality", [sys.executable, "tests/test_validate_llm_choice_quality.py"]),
     Check("pipeline_artifact_validator", [sys.executable, "tests/test_validate_pipeline_artifacts.py"]),
     Check("choice_interview_validator", [sys.executable, "tests/test_choice_interview_validator.py"]),
     Check("interview_choice_contract", [sys.executable, "tests/test_interview_choice_contract.py"]),
