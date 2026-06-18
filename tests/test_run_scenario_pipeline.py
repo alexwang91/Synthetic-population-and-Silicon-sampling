@@ -53,6 +53,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
                     "validate_choice_interviews",
                     "bootstrap_choice_intervals",
                     "generate_market_report",
+                    "generate_dashboard_data",
                     "validate_pipeline_artifacts",
                 ],
             )
@@ -62,9 +63,11 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertTrue((run_dir / "bootstrap_intervals.json").exists())
             self.assertTrue((run_dir / "market_report.md").exists())
             self.assertTrue((run_dir / "market_report.json").exists())
+            self.assertTrue((run_dir / "dashboard_data.json").exists())
             self.assertTrue((run_dir / "pipeline_artifact_validation.json").exists())
             self.assertIn("market_report_md", manifest["outputs"])
             self.assertIn("market_report_json", manifest["outputs"])
+            self.assertIn("dashboard_data", manifest["outputs"])
             self.assertIn("pipeline_artifact_validation", manifest["outputs"])
 
             choice_validation = json.loads((run_dir / "choice_interview_validation.json").read_text(encoding="utf-8"))
@@ -76,6 +79,12 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(report_json["run_id"], "serbia_smartwatch_pipeline_demo")
             self.assertIn("# Market Report:", report_md)
             self.assertIn("## Executive Summary", report_md)
+
+            dashboard_data = json.loads((run_dir / "dashboard_data.json").read_text(encoding="utf-8"))
+            self.assertEqual(dashboard_data["run"]["run_id"], "serbia_smartwatch_pipeline_demo")
+            self.assertEqual(dashboard_data["method"]["interview_engine"], "rule_based_baseline")
+            self.assertIn("results", dashboard_data)
+            self.assertIn("quality", dashboard_data)
 
             artifact_validation = json.loads((run_dir / "pipeline_artifact_validation.json").read_text(encoding="utf-8"))
             self.assertTrue(artifact_validation["passes_pipeline_artifact_validation"])
@@ -107,6 +116,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertTrue((run_dir / "personas_enriched.jsonl").exists())
             self.assertFalse((run_dir / "choice_results.jsonl").exists())
             self.assertFalse((run_dir / "market_report.md").exists())
+            self.assertFalse((run_dir / "dashboard_data.json").exists())
             self.assertFalse((run_dir / "pipeline_artifact_validation.json").exists())
 
     def test_llm_short_all_exports_prompts_and_awaits_responses(self) -> None:
