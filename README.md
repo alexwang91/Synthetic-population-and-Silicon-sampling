@@ -68,9 +68,20 @@ The important boundary: respondents answer as people; statistics aggregate after
 The prototype uses only the Python standard library.
 
 ```powershell
+# Build a generic country-pack skeleton
+python skills\country-pack-builder\scripts\build_country_pack.py `
+  --country-name Serbia --iso2 RS --iso3 SRB --population-year 2022 `
+  --nso-name "Statistical Office of the Republic of Serbia" `
+  --nso-url "https://www.stat.gov.rs/" `
+  --total-population 6647003 --male-count 3231978 --female-count 3415025 `
+  --output country_packs\RS\metadata.json
+
 # Validate the country-pack builder example
 python skills\country-pack-builder\scripts\validate_country_pack.py `
   skills\country-pack-builder\examples\RS_country_pack_v0_1.json
+
+# Run country-pack unit tests
+python tests\test_country_pack_builder.py
 
 # Validate the choice interview contract
 python tests\test_choice_interview_validator.py
@@ -122,6 +133,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/country-pack-builder/SKILL.md`](skills/country-pack-builder/SKILL.md) | Country statistical data pack skill entrypoint |
 | [`skills/country-pack-builder/prompts/build_country_pack.md`](skills/country-pack-builder/prompts/build_country_pack.md) | Reusable country pack generation prompt |
 | [`skills/country-pack-builder/schemas/country_pack.schema.json`](skills/country-pack-builder/schemas/country_pack.schema.json) | JSON schema for combined country pack files |
+| [`skills/country-pack-builder/scripts/build_country_pack.py`](skills/country-pack-builder/scripts/build_country_pack.py) | Generic country pack skeleton generator |
 | [`skills/country-pack-builder/scripts/validate_country_pack.py`](skills/country-pack-builder/scripts/validate_country_pack.py) | Country pack structure and audit-readiness validator |
 | [`skills/country-pack-builder/examples/RS_country_pack_v0_1.json`](skills/country-pack-builder/examples/RS_country_pack_v0_1.json) | Serbia anchor-ready example pack |
 | [`skills/weighted-persona-pricing/SKILL.md`](skills/weighted-persona-pricing/SKILL.md) | Weighted persona pricing skill entrypoint |
