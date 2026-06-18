@@ -34,6 +34,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(manifest["method"], "deterministic_reproducible_scenario_pipeline")
             self.assertFalse(manifest["scientific_boundary"]["pipeline_changes_model_outputs"])
             self.assertIn("report_policy", manifest["scientific_boundary"])
+            self.assertIn("token_policy", manifest["scientific_boundary"])
             self.assertIn("acceptance_policy", manifest["scientific_boundary"])
             step_names = [step["step"] for step in manifest["steps"]]
             self.assertEqual(
@@ -73,11 +74,11 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(report_json["run_id"], "serbia_smartwatch_pipeline_demo")
             self.assertIn("# Market Report:", report_md)
             self.assertIn("## Executive Summary", report_md)
-            self.assertLess(len(report_md.splitlines()), 120)
 
             artifact_validation = json.loads((run_dir / "pipeline_artifact_validation.json").read_text(encoding="utf-8"))
             self.assertTrue(artifact_validation["passes_pipeline_artifact_validation"])
             self.assertEqual(artifact_validation["error_count"], 0)
+            self.assertEqual(artifact_validation["report_length_policy"], "disabled")
 
     def test_pipeline_can_stop_after_intermediate_step(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
