@@ -76,9 +76,27 @@ A scenario config should not include prior active-run artifacts as inputs, such 
 
 These are outputs of a run, not input population sources.
 
-## Builder
+## One-command runner
 
-Use the config builder to create a run config:
+Use the country scenario runner when you want one command to create a config, validate that it does not depend on a prior panel, and run the scenario pipeline:
+
+```powershell
+python skills\weighted-persona-pricing\scripts\run_country_scenario.py `
+  --country-pack skills\country-pack-builder\examples\RS_country_pack_v0_1.json `
+  --product-scenario skills\weighted-persona-pricing\examples\smartwatch_product_scenario.json `
+  --dimension region=Belgrade,Vojvodina `
+  --dimension sex=male,female `
+  --margins-json skills\weighted-persona-pricing\examples\serbia_smartwatch_margins.json `
+  --sample-size 10000 `
+  --run-id serbia_smartwatch_10000 `
+  --output-root runs
+```
+
+In `llm_short_all` mode without `--llm-response-file`, the run stops at `awaiting_llm_responses` after exporting prompts. This is expected.
+
+## Builder only
+
+Use the config builder when you only want to create a config:
 
 ```powershell
 python skills\weighted-persona-pricing\scripts\create_country_scenario_config.py `
