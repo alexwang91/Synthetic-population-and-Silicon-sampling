@@ -177,11 +177,11 @@ def run_country_scenario(args: argparse.Namespace) -> dict[str, Any]:
         pipeline_command.extend(["--stop-after", args.stop_after])
     pipeline_result = run(pipeline_command, cwd=root, step="run_scenario_pipeline")
     results.append(pipeline_result)
-    status = "passed" if pipeline_result["returncode"] == 0 else "failed"
     manifest = args.output_root / args.run_id / "manifest.json"
     manifest_status = None
     if manifest.exists():
         manifest_status = load_json(manifest).get("status")
+    status = "failed" if pipeline_result["returncode"] != 0 else (manifest_status or "passed")
     return {"status": status, "run_id": args.run_id, "config": str(args.config_output), "manifest": str(manifest), "manifest_status": manifest_status, "results": results}
 
 
@@ -237,7 +237,7 @@ def main() -> int:
         raise SystemExit("at least one of --dimension or --dimension-json is required")
     result = run_country_scenario(args)
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-    return 0 if result["status"] in {"passed", "config_created"} else 1
+    return 0 if result["status"] in {"passed", "config_created", "awaiting_llm_responses", "stopped"} else 1
 
 
 if __name__ == "__main__":
