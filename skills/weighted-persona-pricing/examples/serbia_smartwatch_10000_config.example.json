@@ -44,6 +44,7 @@
     ]
   },
   "generate_dashboard_data": true,
+  "generate_dashboard_html": true,
   "generate_report": true,
   "interview_engine": "llm_short_all",
   "ipf_iterations": 200,
