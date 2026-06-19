@@ -1,0 +1,25 @@
+{
+  "margins": [
+    {
+      "name": "region",
+      "targets": {
+        "Belgrade": 60.0,
+        "Vojvodina": 40.0
+      },
+      "variables": [
+        "region"
+      ]
+    },
+    {
+      "name": "sex",
+      "targets": {
+        "female": 55.0,
+        "male": 45.0
+      },
+      "variables": [
+        "sex"
+      ]
+    }
+  ],
+  "separator": "|"
+}
