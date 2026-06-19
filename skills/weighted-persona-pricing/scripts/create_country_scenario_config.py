@@ -121,6 +121,7 @@ def build_config(args: argparse.Namespace) -> dict[str, Any]:
         "report_max_reasons": args.report_max_reasons,
         "report_max_artifacts": args.report_max_artifacts,
         "generate_dashboard_data": True,
+        "generate_dashboard_html": True,
         "dashboard_max_reasons": args.dashboard_max_reasons,
         "dashboard_max_artifacts": args.dashboard_max_artifacts,
         "dashboard_max_archetypes": args.dashboard_max_archetypes,
