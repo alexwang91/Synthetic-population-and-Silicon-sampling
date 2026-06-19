@@ -187,6 +187,7 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
         "market_report_md": run_dir / "market_report.md",
         "market_report_json": run_dir / "market_report.json",
         "dashboard_data": run_dir / "dashboard_data.json",
+        "dashboard_html": run_dir / "dashboard.html",
         "pipeline_artifact_validation": run_dir / "pipeline_artifact_validation.json",
     }
 
@@ -295,6 +296,11 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
         manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
 
+    if config.get("generate_dashboard_html", True) and outputs["dashboard_data"].exists():
+        if add_step("generate_dashboard_html", [py, str(script_path("skills/weighted-persona-pricing/scripts/generate_dashboard_html.py")), "--manifest", str(run_dir / "manifest.json"), "--output", str(outputs["dashboard_html"])]):
+            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        manifest = finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="passed")
+
     if config.get("validate_artifacts", True):
         if add_step("validate_pipeline_artifacts", [py, str(script_path("skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py")), str(run_dir / "manifest.json"), "--audit", str(outputs["pipeline_artifact_validation"]), "--max-report-lines", str(config.get("max_report_lines", 0))]):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
@@ -342,11 +348,11 @@ def finalize_manifest(
             "pipeline_changes_model_outputs": False,
             "choice_model_calibration_level": "uncalibrated_rule_based_baseline" if interview_engine == "rule_based_baseline" else "synthetic_llm_respondent_uncalibrated",
             "provenance_policy": "all major intermediate artifacts and audit files are retained",
-            "report_policy": "market_report.md is an optional summary surface; complete dashboard data stays in JSON/JSONL artifacts",
+            "report_policy": "market_report.md is an optional summary surface; dashboard_data.json and dashboard.html are presentation artifacts",
             "token_policy": "llm_short_all may ask every selected representative persona one short isolated choice prompt; never summarize all raw row-level interviews in one LLM prompt",
-            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, and optional report-length warnings",
+            "acceptance_policy": "pipeline_artifact_validation.json checks required artifacts, critical audit pass flags, dashboard data, dashboard HTML, and optional report-length warnings",
             "original_plan_alignment": "representative weighted respondents each produce a discrete choice; rule_based_baseline is only an auxiliary baseline, while llm_short_all is the intended synthetic respondent mode",
-            "dashboard_policy": "dashboard_data.json summarizes aggregate panels, archetypes, segment cubes, reason cubes, and 10k/1k/100 sample layers without copying full row-level records",
+            "dashboard_policy": "dashboard_data.json summarizes aggregate panels, archetypes, segment cubes, reason cubes, and 10k/1k/100 sample layers; dashboard.html embeds that aggregate artifact and does not read row-level records",
             "llm_risk_controls": [
                 "explicit canonical choice labels independent of presented order",
                 "deterministic alternative-order counterbalancing",
@@ -386,6 +392,7 @@ def parse_args() -> argparse.Namespace:
         "bootstrap_choice_intervals",
         "generate_market_report",
         "generate_dashboard_data",
+        "generate_dashboard_html",
         "validate_pipeline_artifacts",
     ])
     return parser.parse_args()
