@@ -1,0 +1,240 @@
+.dataLoaderCard {
+  margin-top: 34px;
+  max-width: 980px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 16px;
+  background: rgba(7, 10, 18, 0.68);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px);
+}
+
+.dataLoaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.dataLoaderTitle span {
+  margin-left: auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: var(--cyan);
+  border: 1px solid rgba(50, 213, 255, 0.22);
+  background: rgba(50, 213, 255, 0.09);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.dataLoaderControls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.urlInputLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 13px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--muted);
+}
+
+.urlInputLabel input {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.urlInputLabel input::placeholder {
+  color: var(--muted-2);
+}
+
+.primaryButton,
+.uploadButton,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+}
+
+.primaryButton,
+.uploadButton {
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 16px;
+  white-space: nowrap;
+  color: #06101f;
+  font-weight: 850;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  box-shadow: 0 18px 40px rgba(50, 213, 255, 0.22);
+}
+
+.uploadButton {
+  position: relative;
+  color: var(--text);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: none;
+}
+
+.uploadButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.contractPanel {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr 0.95fr 1.1fr;
+  gap: 16px;
+  padding: 36px clamp(20px, 4vw, 64px) 0;
+}
+
+.contractHero strong {
+  display: block;
+  margin: 22px 0 8px;
+  font-size: clamp(3rem, 5vw, 5.6rem);
+  line-height: 0.85;
+  letter-spacing: -0.08em;
+  color: var(--cyan);
+}
+
+.contractHero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.contractList {
+  min-height: 248px;
+}
+
+.contractList h3 {
+  margin: 0 0 16px;
+}
+
+.contractItem {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.contractItem:last-child {
+  border-bottom: 0;
+}
+
+.contractItem strong {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.drawer {
+  width: min(520px, calc(100vw - 28px));
+  min-height: 100vh;
+  padding: 24px;
+  overflow-y: auto;
+  border-left: 1px solid var(--line-strong);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(50, 213, 255, 0.12), transparent 20rem),
+    linear-gradient(180deg, rgba(11, 15, 28, 0.98), rgba(6, 8, 15, 0.98));
+  box-shadow: -30px 0 90px rgba(0, 0, 0, 0.45);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.drawerHeader h2 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+
+.iconButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.drawerList {
+  display: grid;
+  gap: 12px;
+}
+
+.drawerItem {
+  display: grid;
+  gap: 6px;
+  padding: 15px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.drawerItem strong {
+  color: var(--text);
+}
+
+.drawerItem span {
+  color: var(--muted);
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+@media (max-width: 1260px) {
+  .dataLoaderControls,
+  .contractPanel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .urlInputLabel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .dataLoaderControls,
+  .contractPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryButton,
+  .uploadButton,
+  .ghostButton {
+    width: 100%;
+  }
+}
