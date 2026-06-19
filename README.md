@@ -23,6 +23,8 @@ _Census-weighted digital respondents for product choice, pricing, segment lift, 
 
 This repo packages agent skills and a runnable prototype for building weighted synthetic consumer panels where each digital respondent has an identity, answers a product scenario, and leaves an auditable trail from country data pack to persona to choice to segment lift.
 
+Generated full panels live outside git in `runs/`. The repository keeps curated examples, summaries, and validation artifacts under `examples/` so each country/product run can be regenerated from the current scenario inputs.
+
 AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repository before using the skill.
 
 ## What It Does
@@ -195,12 +197,12 @@ python tests\test_validate_pipeline_artifacts.py
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
 
-# Validate the current Hungary smartwatch example output
+# Validate the curated Hungary smartwatch example sample
 python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py `
-  runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl `
-  --audit runs\hungary-watch-fit5pro-vs-gw8-interview\choice_interview_validation.json
+  examples\hungary-watch-fit5pro-vs-gw8-interview\samples\choice_results_sample_100.jsonl
 
-# Reproduce the example run when needed
+# Reproduce the full 10,000-person run locally when needed.
+# Output goes to runs/, which is intentionally gitignored.
 python scripts\run_hungary_watch_scenario.py
 ```
 
@@ -213,12 +215,12 @@ Use $weighted-persona-pricing to evaluate a country/category/product/competitor 
 
 ## Proof
 
-The included Hungary smartwatch scenario is a Level 0 synthetic interview run. It is a method demonstration, not a real sales forecast.
+The included Hungary smartwatch scenario is a Level 0 synthetic interview example. It is a method demonstration, not a real sales forecast. The full 10,000-person panel is generated locally; this repository keeps samples and summary artifacts.
 
 | Check | Current artifact | Result |
 |---|---|---:|
-| Core panel size | `personas_core.jsonl` | 10,000 records |
-| Choice interviews | `choice_results.jsonl` | 10,000 rows |
+| Core panel sample | `samples/personas_core_sample_100.jsonl` | 100 example records |
+| Choice interview sample | `samples/choice_results_sample_100.jsonl` | 100 example rows |
 | Choice contract validation | `choice_interview_validation.json` | 100% pass rate |
 | Answer confidence distribution | `choice_interview_validation.json` | high 1,783 / medium 5,363 / low 2,854 |
 | Bootstrap intervals | `bootstrap_intervals.json` | generated |
@@ -233,6 +235,13 @@ Example market summary from the included run:
 | None / delay | 19.5% | 18.9%-20.2% | 19,540 |
 
 The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no Hungarian smartwatch sales, clickstream, or survey calibration is included.
+
+## Data Policy
+
+- `examples/` contains small samples, summaries, and audit evidence that make the method inspectable.
+- `runs/` contains generated full panels and is ignored by git.
+- Full `personas_core.jsonl`, `choice_results.jsonl`, and narrative JSONL files should be regenerated per country, category, product, competitor set, and calibration level.
+- If a full run must be shared, publish it as a separate artifact or controlled dataset, not as normal source history.
 
 ## Repository Map
 
@@ -262,7 +271,8 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/weighted-persona-pricing/scripts/validate_choice_interviews.py`](skills/weighted-persona-pricing/scripts/validate_choice_interviews.py) | Choice-row schema and contamination validator |
 | [`skills/weighted-persona-pricing/scripts/bootstrap_choice_intervals.py`](skills/weighted-persona-pricing/scripts/bootstrap_choice_intervals.py) | Weighted bootstrap intervals and segment lift |
 | [`scripts/run_hungary_watch_scenario.py`](scripts/run_hungary_watch_scenario.py) | End-to-end runnable demo scenario |
-| [`runs/hungary-watch-fit5pro-vs-gw8-interview/`](runs/hungary-watch-fit5pro-vs-gw8-interview/) | Example output, reports, validation, audit files |
+| [`examples/hungary-watch-fit5pro-vs-gw8-interview/`](examples/hungary-watch-fit5pro-vs-gw8-interview/) | Curated sample output, reports, validation, audit files |
+| `runs/` | Local generated full panels; ignored by git |
 | [`tests/`](tests/) | Lightweight unittest checks for the interview contract |
 
 ## Compatibility

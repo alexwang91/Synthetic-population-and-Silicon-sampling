@@ -4,8 +4,8 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Keep the current interview-first example run; ignore the earlier score/probability prototype.
-runs/hungary-watch-fit5pro-vs-gw8/
+# Generated scenario runs. Keep full 10k+ panels local; commit curated samples under examples/.
+runs/
 
 # Local environment noise
 .env

@@ -1,0 +1,20 @@
+{
+  "record_count": 10000,
+  "choice_counts": {
+    "focal_product": 3527,
+    "competitor": 4519,
+    "none_or_delay": 1954
+  },
+  "answer_confidence_counts": {
+    "high": 1783,
+    "medium": 5363,
+    "low": 2854
+  },
+  "control_presence": {},
+  "error_count": 0,
+  "warning_count": 0,
+  "errors": [],
+  "warnings": [],
+  "choice_record_contract_pass_rate": 1.0,
+  "passes_choice_interview_integrity": true
+}

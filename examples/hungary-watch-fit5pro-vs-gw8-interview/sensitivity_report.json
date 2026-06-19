@@ -1,0 +1,100 @@
+{
+  "base": {
+    "shares": {
+      "focal_product": 0.3527,
+      "competitor": 0.4519,
+      "none_or_delay": 0.1954
+    },
+    "switch_count_from_base": 0,
+    "switch_rate_from_base": 0.0
+  },
+  "focal_price_grid": {
+    "89990": {
+      "shares": {
+        "focal_product": 0.3943,
+        "competitor": 0.424,
+        "none_or_delay": 0.1817
+      },
+      "switch_count_from_base": 591,
+      "switch_rate_from_base": 0.0591
+    },
+    "94990": {
+      "shares": {
+        "focal_product": 0.3754,
+        "competitor": 0.4378,
+        "none_or_delay": 0.1868
+      },
+      "switch_count_from_base": 335,
+      "switch_rate_from_base": 0.0335
+    },
+    "99990": {
+      "shares": {
+        "focal_product": 0.3527,
+        "competitor": 0.4519,
+        "none_or_delay": 0.1954
+      },
+      "switch_count_from_base": 0,
+      "switch_rate_from_base": 0.0
+    },
+    "104990": {
+      "shares": {
+        "focal_product": 0.3291,
+        "competitor": 0.4671,
+        "none_or_delay": 0.2038
+      },
+      "switch_count_from_base": 354,
+      "switch_rate_from_base": 0.0354
+    },
+    "109990": {
+      "shares": {
+        "focal_product": 0.3026,
+        "competitor": 0.4833,
+        "none_or_delay": 0.2141
+      },
+      "switch_count_from_base": 746,
+      "switch_rate_from_base": 0.0746
+    }
+  },
+  "competitor_price_grid": {
+    "72990": {
+      "shares": {
+        "focal_product": 0.3507,
+        "competitor": 0.4578,
+        "none_or_delay": 0.1915
+      },
+      "switch_count_from_base": 59,
+      "switch_rate_from_base": 0.0059
+    },
+    "77990": {
+      "shares": {
+        "focal_product": 0.3527,
+        "competitor": 0.4519,
+        "none_or_delay": 0.1954
+      },
+      "switch_count_from_base": 0,
+      "switch_rate_from_base": 0.0
+    },
+    "87990": {
+      "shares": {
+        "focal_product": 0.3614,
+        "competitor": 0.4296,
+        "none_or_delay": 0.209
+      },
+      "switch_count_from_base": 223,
+      "switch_rate_from_base": 0.0223
+    },
+    "89990": {
+      "shares": {
+        "focal_product": 0.3635,
+        "competitor": 0.4236,
+        "none_or_delay": 0.2129
+      },
+      "switch_count_from_base": 283,
+      "switch_rate_from_base": 0.0283
+    }
+  },
+  "notes": [
+    "Sensitivity re-runs identity-first respondent answers on the same personas.",
+    "Direction is more reliable than exact percentage points at Level 0."
+  ]
+}

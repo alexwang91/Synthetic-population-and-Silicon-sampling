@@ -1,0 +1,100 @@
+{
+  "scenario_id": "hungary-watch-fit5pro-vs-gw8-interview",
+  "country": "Hungary",
+  "category": "smartwatch",
+  "population_year": 2024,
+  "target_population": "adult smartwatch purchase intenders, normalized to 100,000",
+  "calibration_level": "level_0_census_plus_model_assumptions",
+  "sources": [
+    {
+      "name": "World Bank WDI - Hungary total population",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.TOTL?format=json&date=2024",
+      "value": 9562065,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary urban population share",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.URB.TOTL.IN.ZS?format=json&date=2024",
+      "value": 70.491825943218,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary female population share",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.TOTL.FE.ZS?format=json&date=2024",
+      "value": 51.9821395629557,
+      "year": 2024
+    },
+    {
+      "name": "World Bank WDI - Hungary 0-14 / 15-64 / 65+ population shares",
+      "url": "https://api.worldbank.org/v2/country/HUN/indicator/SP.POP.1564.TO.ZS?format=json&date=2024",
+      "value": {
+        "0_14": 14.4013810473594,
+        "15_64": 64.6054217208328,
+        "65_plus": 20.9931972318078
+      },
+      "year": 2024
+    },
+    {
+      "name": "Alza.hu Huawei Watch Fit 5 Pro product page",
+      "url": "https://www.alza.hu/huawei-watch-fit-5-pro-orange-d13350370.htm",
+      "observed_price_huf": 99990,
+      "observed_date": "2026-06-18"
+    },
+    {
+      "name": "Alza.hu Samsung Galaxy Watch 8 44 mm product page",
+      "url": "https://www.alza.hu/samsung-galaxy-watch-8-44-mm-ezust-d13190984.htm",
+      "observed_price_huf": 77990,
+      "observed_date": "2026-06-18"
+    }
+  ],
+  "products": {
+    "focal_product": {
+      "name": "Huawei Watch Fit 5 Pro Orange",
+      "price_huf": 99990,
+      "brand": "Huawei",
+      "battery_days": 10.0,
+      "max_battery_hours": 240,
+      "display_inches": 1.92,
+      "os": "Harmony OS",
+      "android_compatible": true,
+      "ios_compatible": true,
+      "google_pay": false,
+      "nfc": false,
+      "water_resistance": "5 ATM",
+      "health_features": [
+        "SpO2",
+        "ECG",
+        "sleep",
+        "heart_rate"
+      ],
+      "positioning": "long battery, sport-health, cross-platform"
+    },
+    "competitor": {
+      "name": "Samsung Galaxy Watch 8 44 mm Silver",
+      "price_huf": 77990,
+      "brand": "Samsung",
+      "battery_days": 1.67,
+      "max_battery_hours": 40,
+      "display_inches": 1.47,
+      "os": "Wear OS / Android",
+      "android_compatible": true,
+      "ios_compatible": false,
+      "google_pay": true,
+      "nfc": true,
+      "water_resistance": "5 ATM",
+      "health_features": [
+        "SpO2",
+        "ECG",
+        "sleep",
+        "heart_rate"
+      ],
+      "positioning": "lower price, Android ecosystem, Google Pay"
+    }
+  },
+  "sample_depth": {
+    "core": 10000,
+    "narrative": 1000,
+    "deep": 100
+  },
+  "choice_method": "identity_first_interview_response_then_weighted_choice_count"
+}

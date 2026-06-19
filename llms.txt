@@ -2,6 +2,8 @@
 
 Private research prototype for census-weighted synthetic respondents, country statistical data packs, seed statistical cells, IPF/raking, persona skeleton sampling, deterministic soft-trait expansion, persona coherence validation, product scenario normalization, deterministic choice baselines, all-persona LLM choice interviews, LLM choice risk controls, dashboard data generation, scenario pipeline orchestration, concise market reports, pipeline artifact validation, lightweight check running, token/cost control, isolated product choice interviews, pricing sensitivity, segment lift, and audit reports.
 
+Full generated panels belong in local `runs/` and are ignored by git. Committed data should be curated samples and summaries under `examples/`.
+
 ## Start Here
 
 - README: `README.md`
@@ -99,6 +101,6 @@ python tests\test_run_scenario_pipeline.py
 python tests\test_validate_pipeline_artifacts.py
 python tests\test_choice_interview_validator.py
 python tests\test_interview_choice_contract.py
-python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py runs\hungary-watch-fit5pro-vs-gw8-interview\choice_results.jsonl
+python skills\weighted-persona-pricing\scripts\validate_choice_interviews.py examples\hungary-watch-fit5pro-vs-gw8-interview\samples\choice_results_sample_100.jsonl
 python scripts\run_hungary_watch_scenario.py
 ```
