@@ -19,6 +19,7 @@ from typing import Any
 REQUIRED_TOP_LEVEL = {"persona_id", "population_weight", "hard", "soft"}
 REQUIRED_SOFT_SECTIONS = {"media_habits", "shopping_habits", "psychographics", "category_priors", "soft_trait_trace"}
 BOUNDED_SCORE_SECTIONS = {"media_habits", "shopping_habits", "psychographics", "category_priors"}
+UNBOUNDED_CATEGORY_PRIOR_FIELDS = {"comfortable_price_multiplier", "stretch_price_multiplier"}
 OPTIONAL_HARD_FIELDS = {"region", "sex", "age_band", "education_level", "income_decile", "household_size", "settlement_type", "employment_status"}
 
 
@@ -151,6 +152,8 @@ def validate_bounded_scores(record: dict[str, Any], sink: IssueSink) -> None:
         if not isinstance(section, dict):
             continue
         for field, value in section.items():
+            if section_name == "category_priors" and field in UNBOUNDED_CATEGORY_PRIOR_FIELDS:
+                continue
             if isinstance(value, bool) or value is None or isinstance(value, str):
                 continue
             score_value = numeric(value)
