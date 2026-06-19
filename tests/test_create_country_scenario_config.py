@@ -70,6 +70,8 @@ class CountryScenarioConfigBuilderTest(unittest.TestCase):
             self.assertEqual(config["sample_size"], 10000)
             self.assertEqual(config["dashboard_medium_sample_size"], 1000)
             self.assertEqual(config["dashboard_deep_sample_size"], 100)
+            self.assertTrue(config["generate_dashboard_data"])
+            self.assertTrue(config["generate_dashboard_html"])
             self.assertEqual(config["interview_engine"], "llm_short_all")
             self.assertTrue(config["country_run_policy"]["regenerate_panel_from_country_pack"])
             self.assertTrue(config["country_run_policy"]["no_static_persona_panel_input"])
@@ -116,6 +118,7 @@ class CountryScenarioConfigBuilderTest(unittest.TestCase):
             config = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(config["sample_size"], 40)
             self.assertEqual(config["interview_engine"], "rule_based_baseline")
+            self.assertTrue(config["generate_dashboard_html"])
             self.assertIn("choice_mode", config)
             self.assertNotIn("llm_order_policy", config)
 
