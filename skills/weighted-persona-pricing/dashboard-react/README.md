@@ -32,6 +32,23 @@ http://localhost:5173/?data=../../../runs/serbia_smartwatch_pipeline_demo/dashbo
 
 The Vite config allows reading from the repository root during local development.
 
+## Loading options
+
+The dashboard supports three loading modes:
+
+1. **Embedded demo data** - default when no data source is provided.
+2. **URL input** - paste a relative or absolute `dashboard_data.json` path into the loader bar and click **Load URL**.
+3. **Local upload** - click **Upload JSON** and select a local `dashboard_data.json` file.
+
+The app validates the loaded artifact against the dashboard data contract after each load.
+
+## V2 interaction surfaces
+
+- **Data contract panel** - shows required sections, recommended sections, warnings, and a contract score.
+- **Artifact drawer** - lists retained artifact paths from the active run.
+- **Methodology drawer** - exposes engine, calibration, prompt/order settings, risk controls, limitations, and LLM warning count.
+- **Segment explorer** - still uses precomputed cubes; it reports exact vs nearest cube to avoid implying arbitrary recomputation.
+
 ## Sections
 
 1. **Hero overview** - run status, engine, respondent count, weighted population, 10k/1k/100 layers.
