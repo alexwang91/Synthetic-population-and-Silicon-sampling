@@ -23,6 +23,30 @@ python skills\weighted-persona-pricing\scripts\generate_dashboard_data.py `
 
 The full scenario pipeline generates this file automatically when `generate_dashboard_data` is true.
 
+## React dashboard
+
+A premium React/Vite dashboard is available at:
+
+```text
+skills/weighted-persona-pricing/dashboard-react
+```
+
+Run it locally:
+
+```powershell
+cd skills\weighted-persona-pricing\dashboard-react
+npm install
+npm run dev
+```
+
+Load a real run with:
+
+```text
+http://localhost:5173/?data=../../../runs/<run_id>/dashboard_data.json
+```
+
+The React app reads only `dashboard_data.json`. It does not read 10k row-level persona JSONL, choice JSONL, or raw LLM responses.
+
 ## Top-level sections
 
 | Section | Purpose |
@@ -30,6 +54,12 @@ The full scenario pipeline generates this file automatically when `generate_dash
 | `run` | Run ID, pipeline status, pipeline version, creation time. |
 | `method` | Interview engine, calibration level, prompt/order settings, risk controls, limitations. |
 | `inputs` | Scenario inputs copied from the manifest. |
+| `country_panel` | Weighted country/panel distributions and respondent support counts. |
+| `archetypes` | Compact representative synthetic profiles and archetype-level choice shares. |
+| `filter_options` | Values available to the segment explorer. |
+| `segment_choice_cube` | Precomputed weighted choice shares by segment. |
+| `reason_cube` | Precomputed drivers and barriers by segment and choice. |
+| `sample_layers` | 10k quantitative layer, 1k explanation sample, 100 deep case cards. |
 | `product_scenario` | Normalized product choice-set summary. |
 | `results` | Choice shares, intervals, confidence counts, top drivers, top barriers. |
 | `quality` | Audit cards, LLM risk summary, row validation, artifact validation. |
@@ -56,11 +86,14 @@ For LLM runs, the dashboard should display:
 
 1. **Executive result** - weighted choice shares and bootstrap intervals.
 2. **Choice task** - alternatives, prices, outside option, key normalized attributes.
-3. **Method card** - interview engine, prompt/order settings, calibration level.
-4. **Quality card** - IPF, persona coherence, product scenario, choice rows, LLM quality, artifact validation.
-5. **Drivers and barriers** - top weighted reason codes.
-6. **Subgroup diagnostics** - subgroup share differences and warnings.
-7. **Artifacts** - downloadable source files for audit.
+3. **Country panel distribution** - weighted population distributions and synthetic respondent support counts.
+4. **Representative archetypes** - compact profile cards and archetype-level choice shares.
+5. **Segment explorer** - selected segment weighted population, respondent count, and choice mix.
+6. **Drivers and barriers** - top weighted reason codes and segment snapshots.
+7. **Method card** - interview engine, prompt/order settings, calibration level.
+8. **Quality card** - IPF, persona coherence, product scenario, choice rows, LLM quality, artifact validation.
+9. **Deep case cards** - compact 100-person interpretation layer examples.
+10. **Artifacts** - downloadable source files for audit.
 
 ## Interpretation
 
