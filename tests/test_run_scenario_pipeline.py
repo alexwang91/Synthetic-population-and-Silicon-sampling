@@ -54,6 +54,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
                     "bootstrap_choice_intervals",
                     "generate_market_report",
                     "generate_dashboard_data",
+                    "generate_dashboard_html",
                     "validate_pipeline_artifacts",
                 ],
             )
@@ -64,10 +65,12 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertTrue((run_dir / "market_report.md").exists())
             self.assertTrue((run_dir / "market_report.json").exists())
             self.assertTrue((run_dir / "dashboard_data.json").exists())
+            self.assertTrue((run_dir / "dashboard.html").exists())
             self.assertTrue((run_dir / "pipeline_artifact_validation.json").exists())
             self.assertIn("market_report_md", manifest["outputs"])
             self.assertIn("market_report_json", manifest["outputs"])
             self.assertIn("dashboard_data", manifest["outputs"])
+            self.assertIn("dashboard_html", manifest["outputs"])
             self.assertIn("pipeline_artifact_validation", manifest["outputs"])
 
             choice_validation = json.loads((run_dir / "choice_interview_validation.json").read_text(encoding="utf-8"))
@@ -85,6 +88,11 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertEqual(dashboard_data["method"]["interview_engine"], "rule_based_baseline")
             self.assertIn("results", dashboard_data)
             self.assertIn("quality", dashboard_data)
+
+            dashboard_html = (run_dir / "dashboard.html").read_text(encoding="utf-8")
+            self.assertIn("window.DASHBOARD_DATA", dashboard_html)
+            self.assertIn("serbia_smartwatch_pipeline_demo", dashboard_html)
+            self.assertIn("dashboard_data.json", dashboard_html)
 
             artifact_validation = json.loads((run_dir / "pipeline_artifact_validation.json").read_text(encoding="utf-8"))
             self.assertTrue(artifact_validation["passes_pipeline_artifact_validation"])
@@ -117,6 +125,7 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             self.assertFalse((run_dir / "choice_results.jsonl").exists())
             self.assertFalse((run_dir / "market_report.md").exists())
             self.assertFalse((run_dir / "dashboard_data.json").exists())
+            self.assertFalse((run_dir / "dashboard.html").exists())
             self.assertFalse((run_dir / "pipeline_artifact_validation.json").exists())
 
     def test_llm_short_all_exports_prompts_and_awaits_responses(self) -> None:
