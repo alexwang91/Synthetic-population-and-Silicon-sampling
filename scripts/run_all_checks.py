@@ -27,6 +27,8 @@ class Check(NamedTuple):
 FAST_CHECKS = [
     Check("country_pack_builder", [sys.executable, "tests/test_country_pack_builder.py"]),
     Check("country_pack_ipf_pipeline", [sys.executable, "tests/test_country_pack_ipf_pipeline.py"]),
+    Check("country_scenario_config_builder", [sys.executable, "tests/test_create_country_scenario_config.py"]),
+    Check("country_run_dependency_validator", [sys.executable, "tests/test_validate_no_static_panel_dependency.py"]),
     Check("persona_skeleton_sampler", [sys.executable, "tests/test_sample_persona_skeletons.py"]),
     Check("soft_trait_expansion", [sys.executable, "tests/test_expand_soft_traits.py"]),
     Check("persona_coherence", [sys.executable, "tests/test_validate_persona_coherence.py"]),
