@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a completed scenario pipeline run folder.
-
-This is an acceptance-check layer. It verifies that key artifacts exist, JSON
-artifacts parse, critical audit checks pass, and the manifest preserves
-scientific boundaries.
-
-Report length is not a default hard limit. If `--max-report-lines` is positive,
-an overlong report is emitted as a warning so callers can decide whether to
-fail with `--fail-on-warning`.
-"""
+"""Validate a completed scenario pipeline run folder."""
 
 from __future__ import annotations
 
@@ -31,6 +22,7 @@ BASE_REQUIRED_OUTPUT_KEYS = [
     "market_report_md",
     "market_report_json",
     "dashboard_data",
+    "dashboard_html",
 ]
 ENGINE_REQUIRED_OUTPUT_KEYS = {
     "rule_based_baseline": ["choice_model_audit"],
@@ -128,7 +120,6 @@ def check_manifest(manifest: dict[str, Any], manifest_path: Path, sink: IssueSin
         failed_steps = [step for step in steps if isinstance(step, dict) and step.get("returncode") != 0]
         if failed_steps:
             sink.error("manifest_contains_failed_steps", failed_steps=[step.get("step") for step in failed_steps])
-
     boundary = manifest.get("scientific_boundary")
     if not isinstance(boundary, dict):
         sink.error("manifest_missing_scientific_boundary")
@@ -188,23 +179,19 @@ def check_audits(manifest: dict[str, Any], artifacts: dict[str, dict[str, Any]],
         sink.error("ipf_not_converged", converged=ipf.get("converged"), warnings=ipf.get("warning_count"))
     if isinstance(ipf.get("warning_count"), int) and ipf["warning_count"] > 0:
         sink.warning("ipf_has_warnings", warning_count=ipf["warning_count"])
-
     coherence = artifacts.get("persona_coherence_audit", {})
     if coherence and coherence.get("passes_persona_coherence") is not True:
         sink.error("persona_coherence_failed", errors=coherence.get("error_count"), warnings=coherence.get("warning_count"))
     if isinstance(coherence.get("warning_count"), int) and coherence["warning_count"] > 0:
         sink.warning("persona_coherence_has_warnings", warning_count=coherence["warning_count"])
-
     product = artifacts.get("product_scenario_audit", {})
     if product and product.get("passes_product_scenario_normalization") is not True:
         sink.error("product_scenario_normalization_failed", errors=product.get("error_count"), warnings=product.get("warnings"))
-
     choices = artifacts.get("choice_interview_validation", {})
     if choices and choices.get("passes_choice_interview_integrity") is not True:
         sink.error("choice_interview_validation_failed", errors=choices.get("error_count"), warnings=choices.get("warning_count"))
     if choices and choices.get("record_count", 0) <= 0:
         sink.error("choice_validation_has_no_records", record_count=choices.get("record_count"))
-
     if engine == "rule_based_baseline":
         choice_model = artifacts.get("choice_model_audit", {})
         if choice_model and choice_model.get("record_count", 0) <= 0:
@@ -222,7 +209,6 @@ def check_audits(manifest: dict[str, Any], artifacts: dict[str, dict[str, Any]],
             sink.error("llm_choice_quality_failed", errors=quality.get("error_count"), warnings=quality.get("warning_count"))
         if quality and isinstance(quality.get("warning_count"), int) and quality["warning_count"] > 0:
             sink.warning("llm_choice_quality_has_warnings", warning_count=quality["warning_count"])
-
     report = artifacts.get("market_report_json", {})
     if report and not report.get("choice_shares"):
         sink.warning("market_report_missing_choice_shares")
@@ -260,7 +246,6 @@ def validate_pipeline(path: Path, max_report_lines: int) -> dict[str, Any]:
     if manifest_error or manifest is None:
         sink.error("manifest_invalid", path=str(manifest_path), error=manifest_error)
         return summary(manifest_path, {}, {}, sink, max_report_lines)
-
     check_manifest(manifest, manifest_path, sink)
     outputs = load_outputs(manifest, run_dir, sink)
     artifacts = check_json_outputs(outputs, sink)
