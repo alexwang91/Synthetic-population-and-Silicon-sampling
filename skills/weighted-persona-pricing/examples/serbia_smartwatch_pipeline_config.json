@@ -35,6 +35,11 @@
   "category": "smartwatch",
   "category_price_index": 0.7,
   "interview_engine": "rule_based_baseline",
+  "country_run_policy": {
+    "regenerate_panel_from_country_pack": true,
+    "no_static_persona_panel_input": true,
+    "medium_and_deep_samples_derived_from_active_run": true
+  },
   "ipf_iterations": 50,
   "ipf_tolerance": 1e-9,
   "choice_mode": "argmax",
