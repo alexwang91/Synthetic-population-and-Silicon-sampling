@@ -243,10 +243,41 @@ def pipeline(config: dict[str, Any], *, config_path: Path, output_root: Path, st
             export_command.extend(["--max-story-chars", str(config.get("max_story_chars", 900))])
         if add_step("export_llm_choice_prompts", export_command):
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
-        if llm_response_file is None:
+        llm_call_mode = str(config.get("llm_call_mode", "await_external"))
+        if llm_call_mode not in {"await_external", "run_batch"}:
+            raise ValueError("llm_call_mode must be one of: await_external, run_batch")
+        if llm_call_mode == "run_batch":
+            batch_command = [
+                py,
+                str(script_path("skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py")),
+                "run-batch",
+                str(outputs["llm_choice_prompts"]),
+                "--output",
+                str(outputs["choice_results"]),
+                "--audit",
+                str(outputs["llm_choice_interview_audit"]),
+                "--provider",
+                str(config.get("llm_provider", "anthropic")),
+                "--model",
+                str(config.get("llm_model", "claude-haiku-4-5")),
+                "--temperature",
+                str(config.get("llm_temperature", 0.7)),
+                "--max-output-tokens",
+                str(config.get("llm_max_output_tokens", 600)),
+                "--concurrency",
+                str(config.get("llm_concurrency", 4)),
+                "--max-retries",
+                str(config.get("llm_max_retries", 5)),
+                "--cache-dir",
+                str(run_dir / "llm_cache"),
+            ]
+            if add_step("run_llm_choice_batch", batch_command):
+                return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        elif llm_response_file is not None:
+            if add_step("normalize_llm_choice_responses", [py, str(script_path("skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py")), "normalize-responses", str(outputs["llm_choice_prompts"]), str(llm_response_file), "--output", str(outputs["choice_results"]), "--audit", str(outputs["llm_choice_interview_audit"])]):
+                return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
+        else:
             return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="awaiting_llm_responses")
-        if add_step("normalize_llm_choice_responses", [py, str(script_path("skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py")), "normalize-responses", str(outputs["llm_choice_prompts"]), str(llm_response_file), "--output", str(outputs["choice_results"]), "--audit", str(outputs["llm_choice_interview_audit"])]):
-            return finalize_manifest(config, run_dir, country_pack, product_scenario, dimension_json, margins, outputs, steps, status="stopped")
     else:
         raise ValueError(f"unsupported interview_engine: {interview_engine}")
 
@@ -337,6 +368,9 @@ def finalize_manifest(
             "category": config["category"],
             "category_price_index": config["category_price_index"],
             "llm_response_file": config.get("llm_response_file"),
+            "llm_call_mode": config.get("llm_call_mode", "await_external"),
+            "llm_provider": config.get("llm_provider", "anthropic"),
+            "llm_model": config.get("llm_model", "claude-haiku-4-5"),
             "llm_order_policy": config.get("llm_order_policy", "rotate"),
             "llm_prompt_variant": config.get("llm_prompt_variant", "tradeoff"),
             "dashboard_medium_sample_size": config.get("dashboard_medium_sample_size", 1000),
@@ -386,6 +420,7 @@ def parse_args() -> argparse.Namespace:
         "product_scenario_normalizer",
         "run_choice_model",
         "export_llm_choice_prompts",
+        "run_llm_choice_batch",
         "normalize_llm_choice_responses",
         "validate_choice_interviews",
         "validate_llm_choice_quality",

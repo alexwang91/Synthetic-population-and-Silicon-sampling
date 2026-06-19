@@ -36,6 +36,7 @@ FAST_CHECKS = [
     Check("product_scenario_normalizer", [sys.executable, "tests/test_product_scenario_normalizer.py"]),
     Check("choice_model", [sys.executable, "tests/test_run_choice_model.py"]),
     Check("llm_choice_interviews", [sys.executable, "tests/test_run_llm_choice_interviews.py"]),
+    Check("llm_choice_batch", [sys.executable, "tests/test_run_llm_choice_batch.py"]),
     Check("llm_choice_quality", [sys.executable, "tests/test_validate_llm_choice_quality.py"]),
     Check("dashboard_data", [sys.executable, "tests/test_generate_dashboard_data.py"]),
     Check("dashboard_html", [sys.executable, "tests/test_generate_dashboard_html.py"]),

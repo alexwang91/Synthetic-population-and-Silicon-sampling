@@ -42,7 +42,7 @@ The phrase "representative digital respondent" means:
 | `validate_persona_coherence.py` | Supports the original plan by checking that enriched respondents are usable before interview. | core QA | Warnings do not necessarily invalidate a respondent. |
 | `product_scenario_normalizer.py` | Supports the original plan by giving every respondent the same finite product choice task. | core | Does not predict choice. |
 | `run_choice_model.py` | Useful as baseline, smoke test, and comparison model. | auxiliary, not final simulator | Must not be treated as replacement for LLM respondent interviews. |
-| LLM short choice interview over all personas | This is the main intended synthetic respondent simulator. | missing / next | Each respondent independently returns a discrete choice and reason. |
+| `run_llm_choice_interviews.py run-batch` | This is the main intended synthetic respondent simulator: it calls a live LLM (or deterministic mock) per persona and writes discrete choice rows. | implemented | Each respondent independently returns a discrete choice and reason; aggregation still counts weighted choices. |
 | `validate_choice_interviews.py` | Supports the original plan by enforcing row-level discrete choice output and isolation controls. | core QA | Should validate both rule-based baseline rows and LLM interview rows. |
 | `bootstrap_choice_intervals.py` | Supports the original plan by estimating uncertainty over weighted choices. | core statistics | Does not create choices. |
 | `generate_market_report.py` | Supports delivery/reporting. | presentation | Must summarize aggregates and avoid copying all row-level records. |
@@ -85,16 +85,16 @@ These methods are additions that support the original plan:
 
 They are not allowed to replace the original architecture with a score-only simulator.
 
-## Immediate correction to current implementation
+## Implementation status
 
-The repository currently has a deterministic choice baseline. It should remain, but its role must be explicitly demoted from "main simulator" to "baseline/comparison".
+The deterministic choice baseline (`run_choice_model.py`) remains, but its role is explicitly demoted from "main simulator" to "baseline/comparison".
 
-The next required core component is:
+The intended synthetic respondent simulator is implemented in `run_llm_choice_interviews.py`:
 
-```text
-run_llm_choice_interviews.py
-```
+- `export-prompts` reads `personas_enriched.jsonl` and `normalized_choice_scenario.json` and writes one isolated prompt per persona.
+- `run-batch` calls a live LLM (`--provider anthropic`) or a deterministic offline mock (`--provider mock`) over those prompts and writes `choice_results.jsonl` in the schema `validate_choice_interviews.py` expects.
+- `normalize-responses` ingests an externally generated batch response file into the same schema.
 
-This component should read `personas_enriched.jsonl` and `normalized_choice_scenario.json`, then produce `choice_results.jsonl` with the same schema expected by `validate_choice_interviews.py`.
+`run_scenario_pipeline.py` runs this in-pipeline when `interview_engine: "llm_short_all"` and `llm_call_mode: "run_batch"`. See `references/llm-batch-runner.md`.
 
-It may initially support prompt-export / batch-preparation mode before live model calls are wired in.
+Remaining next steps: real survey/CBC/sales/clickstream calibration (move beyond Level 0), a fitted discrete-choice estimator so utility coefficients come from data rather than hand-set values, the narrative/personality enrichment layer, and a causal-HTE path.
