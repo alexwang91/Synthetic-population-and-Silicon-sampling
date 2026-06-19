@@ -50,6 +50,7 @@
   "report_max_reasons": 5,
   "report_max_artifacts": 18,
   "generate_dashboard_data": true,
+  "generate_dashboard_html": true,
   "dashboard_max_reasons": 12,
   "dashboard_max_artifacts": 40,
   "dashboard_max_archetypes": 8,
