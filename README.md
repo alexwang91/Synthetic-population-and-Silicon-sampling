@@ -37,6 +37,7 @@ AI agents / LLMs: read [`llms.txt`](llms.txt) for a compact map of the repositor
 - **Validates persona coherence** - checks ranges, traces, weights, duplicate IDs, and cross-field consistency before choice simulation.
 - **Normalizes product scenarios** - turns raw A/B/C product descriptions into CBC-style finite choice sets with attributes, outside option, and audit metadata.
 - **Runs deterministic choice baselines** - creates discrete choice rows from enriched personas and normalized scenarios before any LLM interview layer.
+- **Runs live LLM choice interviews** - `run-batch` calls a real model (stdlib `urllib`, no SDK) once per isolated persona with concurrency, retry, and a resumable `task_id` cache, and writes the same discrete `choice_results.jsonl`. A deterministic offline mock provider runs the whole path with no API key for tests and demos.
 - **Runs full scenario pipelines** - wires the audited steps together from config and writes a manifest with step commands, outputs, and scientific boundaries.
 - **Generates concise market reports** - summarizes audit status, weighted choice shares, uncertainty intervals, drivers, barriers, and limitations without copying row-level data.
 - **Validates pipeline artifacts** - checks that required run outputs exist, JSON audits parse, critical pass flags are true, and reports stay compact.
@@ -107,6 +108,21 @@ The prototype uses only the Python standard library.
 python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py `
   skills\weighted-persona-pricing\examples\serbia_smartwatch_pipeline_config.json `
   --output-root runs
+
+# Run the full Serbia pipeline through the intended LLM interview layer.
+# This example uses the deterministic offline mock provider, so it needs no API key.
+python skills\weighted-persona-pricing\scripts\run_scenario_pipeline.py `
+  skills\weighted-persona-pricing\examples\serbia_smartwatch_llm_mock_pipeline_config.json `
+  --output-root runs
+
+# Run real silicon-sampling interviews against a live model.
+# Set ANTHROPIC_API_KEY, then either flip the example config to
+# "llm_provider": "anthropic", or call the batch runner directly on exported prompts:
+python skills\weighted-persona-pricing\scripts\run_llm_choice_interviews.py run-batch `
+  runs\serbia_smartwatch_llm_mock_demo\llm_choice_prompts.jsonl `
+  --output runs\serbia_smartwatch_llm_mock_demo\choice_results.jsonl `
+  --provider anthropic --model claude-haiku-4-5 --temperature 0.7 `
+  --concurrency 4 --cache-dir runs\serbia_smartwatch_llm_mock_demo\llm_cache
 
 # Regenerate the concise report from an existing run manifest
 python skills\weighted-persona-pricing\scripts\generate_market_report.py `
@@ -234,7 +250,7 @@ Example market summary from the included run:
 | Samsung Galaxy Watch 8 | 45.2% | 44.3%-46.1% | 45,190 |
 | None / delay | 19.5% | 18.9%-20.2% | 19,540 |
 
-The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no Hungarian smartwatch sales, clickstream, or survey calibration is included.
+The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no Hungarian smartwatch sales, clickstream, or survey calibration is included. The included Hungary numbers are from the deterministic rule-based baseline; the intended LLM interview path (`run-batch`) is now runnable end to end - offline with the mock provider, or against a live model with `ANTHROPIC_API_KEY` - and is the next layer to calibrate.
 
 ## Data Policy
 
@@ -261,6 +277,9 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | [`skills/weighted-persona-pricing/scripts/validate_persona_coherence.py`](skills/weighted-persona-pricing/scripts/validate_persona_coherence.py) | Persona-level coherence and consistency validator |
 | [`skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py`](skills/weighted-persona-pricing/scripts/product_scenario_normalizer.py) | CBC-style product scenario normalizer |
 | [`skills/weighted-persona-pricing/scripts/run_choice_model.py`](skills/weighted-persona-pricing/scripts/run_choice_model.py) | Deterministic rule-based random-utility choice baseline |
+| [`skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py`](skills/weighted-persona-pricing/scripts/run_llm_choice_interviews.py) | Export prompts, run live LLM (or offline mock) interviews, or normalize external batch responses |
+| [`skills/weighted-persona-pricing/references/llm-batch-runner.md`](skills/weighted-persona-pricing/references/llm-batch-runner.md) | LLM interview runner: providers, model/temperature guard, concurrency, retry, cache |
+| [`skills/weighted-persona-pricing/examples/serbia_smartwatch_llm_mock_pipeline_config.json`](skills/weighted-persona-pricing/examples/serbia_smartwatch_llm_mock_pipeline_config.json) | Full `llm_short_all` pipeline config (offline mock provider) |
 | [`skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py`](skills/weighted-persona-pricing/scripts/run_scenario_pipeline.py) | End-to-end deterministic scenario pipeline runner |
 | [`skills/weighted-persona-pricing/scripts/generate_market_report.py`](skills/weighted-persona-pricing/scripts/generate_market_report.py) | Concise market report generator from pipeline manifest |
 | [`skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py`](skills/weighted-persona-pricing/scripts/validate_pipeline_artifacts.py) | Final run-folder acceptance validator |
@@ -282,6 +301,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 | Codex local skills | Ready | Copy or reference `skills/country-pack-builder` and `skills/weighted-persona-pricing` |
 | Windows PowerShell | Tested locally | Current workspace uses Windows paths |
 | Python | Ready | Standard-library scripts; tested with Python 3.13 |
+| Live LLM interview runner | Ready | `run-batch` uses stdlib `urllib`; set `ANTHROPIC_API_KEY`. Offline deterministic mock provider needs no key |
 | GitHub README showcase style | Used | Structure follows an evidence-first showcase pattern |
 | Real market calibration | Not included | Add survey, sales, click, search, or CBC data for higher calibration levels |
 
@@ -323,7 +343,7 @@ The audit explicitly marks this as `level_0_census_plus_model_assumptions`: no H
 
 ## Status
 
-Private research prototype. Use it for hypothesis screening and workflow development before real survey, sales, click, or experiment calibration.
+Private research prototype. The full chain - country pack to weighted personas to isolated LLM choice interviews to weighted aggregation, intervals, audit, and dashboard - runs end to end, offline via the mock provider or against a live model. It is uncalibrated: use it for hypothesis screening and workflow development before real survey, sales, click, or experiment calibration.
 
 ## Acknowledgement
 

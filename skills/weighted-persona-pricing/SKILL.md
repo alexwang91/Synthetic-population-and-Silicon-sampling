@@ -148,6 +148,8 @@ For planning tasks, output a system design, data requirements, schemas, calibrat
 - `references/hte-segmentation.md`: expanded HTE and segment-label taxonomy, evidence rules, and output schema.
 - `references/prompts.md`: persona expander, story, judge, choice reasoning, audit prompts.
 - `references/validation.md`: metrics, compliance boundaries, audit report expectations.
+- `references/llm-batch-runner.md`: live LLM (or deterministic mock) interview runner, providers, model/temperature guard, concurrency, retry, and cache.
+- `scripts/run_llm_choice_interviews.py`: export isolated prompts, run them against a live LLM or offline mock (`run-batch`), or normalize external batch responses into `choice_results.jsonl`.
 - `scripts/validate_persona_panel.py`: basic JSONL panel validator.
 - `scripts/validate_choice_interviews.py`: validates interview choice schema, isolation controls, confidence labels, and contamination red flags.
 - `scripts/bootstrap_choice_intervals.py`: bootstrap intervals for weighted choice shares and segment lift.

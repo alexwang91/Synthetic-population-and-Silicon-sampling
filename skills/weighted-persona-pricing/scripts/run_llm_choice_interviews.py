@@ -16,12 +16,30 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import random
+import time
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
 
 PROMPT_VERSION = "llm_choice_short_v0_2"
+BATCH_VERSION = "llm_choice_batch_v0_1"
 ALLOWED_CHOICES = {"focal_product", "competitor", "none_or_delay"}
+
+ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_VERSION = "2023-06-01"
+DEFAULT_MODEL = "claude-haiku-4-5"
+# Opus 4.7/4.8 and Fable 5 reject temperature/top_p/top_k (HTTP 400). Detect by id
+# substring so the batch runner omits temperature for those models automatically.
+NO_SAMPLING_MODEL_MARKERS = ("opus-4-8", "opus-4-7", "fable-5")
+BATCH_SYSTEM_PROMPT = (
+    "You simulate one isolated synthetic consumer respondent answering a product choice task. "
+    "Respond with exactly one minified JSON object and no other text, code fences, or commentary."
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -279,6 +297,7 @@ def normalize_response_row(response: dict[str, Any], prompt_by_persona: dict[str
             "presented_alternative_order": prompt_row.get("presented_alternative_order"),
             "choice_label_map": choice_label_map,
             "task_id": response.get("task_id") or prompt_row.get("task_id"),
+            "seed": response.get("seed") or f"task:{response.get('task_id') or prompt_row.get('task_id')}",
             "model": response.get("model"),
             "temperature": response.get("temperature"),
         },
@@ -370,6 +389,303 @@ def export_prompts(args: argparse.Namespace) -> int:
     return 0
 
 
+def model_accepts_temperature(model: str) -> bool:
+    lowered = model.lower()
+    return not any(marker in lowered for marker in NO_SAMPLING_MODEL_MARKERS)
+
+
+def extract_json_object(text: str) -> dict[str, Any]:
+    """Best-effort parse of a single JSON object from raw model output."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        newline = text.find("\n")
+        if newline != -1 and text[:newline].strip().lower() in {"json", ""}:
+            text = text[newline + 1 :]
+        text = text.strip()
+    try:
+        value = json.loads(text)
+        if isinstance(value, dict):
+            return value
+    except json.JSONDecodeError:
+        pass
+    start = text.find("{")
+    while start != -1:
+        depth = 0
+        in_string = False
+        escape = False
+        for index in range(start, len(text)):
+            char = text[index]
+            if in_string:
+                if escape:
+                    escape = False
+                elif char == "\\":
+                    escape = True
+                elif char == '"':
+                    in_string = False
+                continue
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : index + 1]
+                    try:
+                        parsed = json.loads(candidate)
+                        if isinstance(parsed, dict):
+                            return parsed
+                    except json.JSONDecodeError:
+                        break
+        start = text.find("{", start + 1)
+    raise ValueError("no JSON object found in model output")
+
+
+def anthropic_message(
+    prompt: str,
+    *,
+    model: str,
+    temperature: float,
+    max_output_tokens: int,
+    api_key: str,
+    base_url: str,
+    timeout: float,
+) -> str:
+    body: dict[str, Any] = {
+        "model": model,
+        "max_tokens": max_output_tokens,
+        "system": BATCH_SYSTEM_PROMPT,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    # Opus 4.7/4.8 and Fable 5 reject sampling params; only send temperature where supported.
+    if model_accepts_temperature(model):
+        body["temperature"] = temperature
+    data = json.dumps(body).encode("utf-8")
+    request = urllib.request.Request(
+        base_url,
+        data=data,
+        method="POST",
+        headers={
+            "content-type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+        },
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    blocks = payload.get("content") or []
+    texts = [block.get("text", "") for block in blocks if isinstance(block, dict) and block.get("type") == "text"]
+    return "".join(texts)
+
+
+def call_with_retry(fn, *, max_retries: int, base_delay: float) -> str:
+    last_error: Exception | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return fn()
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in {408, 409, 429} and exc.code < 500:
+                raise
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < max_retries:
+            delay = min(base_delay * (2 ** attempt), 30.0) + random.uniform(0, base_delay)
+            time.sleep(delay)
+    assert last_error is not None
+    raise last_error
+
+
+def mock_raw_response(prompt_row: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic offline stand-in for a model response.
+
+    Produces a schema-valid choice derived from the persona id and the scenario's
+    own alternatives so the full llm_short_all path is runnable and testable with
+    no API key. It is NOT a model and must never be presented as one.
+    """
+    label_map = prompt_row.get("choice_label_map", {})
+    if not isinstance(label_map, dict) or not label_map:
+        return {"choice": "none_or_delay", "answer_confidence": "low", "interview_response": "No options were available."}
+    persona_id = str(prompt_row.get("persona_id") or "")
+    persona = prompt_row.get("persona", {}) if isinstance(prompt_row.get("persona"), dict) else {}
+    soft = persona.get("soft", {}) if isinstance(persona.get("soft"), dict) else {}
+    psych = soft.get("psychographics", {}) if isinstance(soft.get("psychographics"), dict) else {}
+    bucket = stable_int(persona_id + ":mock") % 100
+    price_sensitivity = numeric(psych.get("price_sensitivity"), 0.5)
+    outside_ids = [alt_id for alt_id, label in label_map.items() if label == "none_or_delay"]
+    product_ids = [alt_id for alt_id, label in label_map.items() if label != "none_or_delay"]
+    if outside_ids and price_sensitivity > 0.8 and bucket < 25:
+        chosen_id = outside_ids[0]
+    elif product_ids:
+        chosen_id = product_ids[bucket % len(product_ids)]
+    else:
+        chosen_id = next(iter(label_map))
+    label = label_map.get(chosen_id, "none_or_delay")
+    confidence = ["high", "medium", "low"][bucket % 3]
+    return {
+        "choice": label,
+        "chosen_alternative_id": chosen_id,
+        "chosen_alternative_name": chosen_id,
+        "interview_response": "Deterministic offline mock answer for pipeline and test coverage; not a real model response.",
+        "main_drivers": ["mock_fit"],
+        "main_barriers": ["mock_tradeoff"],
+        "switch_conditions": ["mock_condition"],
+        "answer_confidence": confidence,
+    }
+
+
+def run_one_task(
+    prompt_row: dict[str, Any],
+    *,
+    provider: str,
+    model: str,
+    temperature: float,
+    max_output_tokens: int,
+    api_key: str,
+    base_url: str,
+    timeout: float,
+    max_retries: int,
+    cache_dir: Path | None,
+) -> tuple[dict[str, Any], bool]:
+    task_id = str(prompt_row.get("task_id") or prompt_row.get("persona_id"))
+    cache_file = (cache_dir / f"{task_id}.json") if cache_dir else None
+    raw: dict[str, Any] | None = None
+    cached = False
+    if cache_file and cache_file.exists():
+        try:
+            loaded = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                raw = loaded
+                cached = True
+        except (json.JSONDecodeError, OSError):
+            raw = None
+    if raw is None:
+        if provider == "mock":
+            raw = mock_raw_response(prompt_row)
+        else:
+            text = call_with_retry(
+                lambda: anthropic_message(
+                    str(prompt_row.get("prompt", "")),
+                    model=model,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    api_key=api_key,
+                    base_url=base_url,
+                    timeout=timeout,
+                ),
+                max_retries=max_retries,
+                base_delay=1.0,
+            )
+            raw = extract_json_object(text)
+        if cache_file:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            cache_file.write_text(json.dumps(raw, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    response = dict(raw)
+    response["persona_id"] = prompt_row.get("persona_id")
+    response["population_weight"] = prompt_row.get("population_weight")
+    response["task_id"] = task_id
+    response["model"] = "mock_deterministic_engine" if provider == "mock" else model
+    response["temperature"] = None if provider == "mock" else (temperature if model_accepts_temperature(model) else None)
+    response["calibration_level"] = "mock_offline_uncalibrated" if provider == "mock" else "synthetic_llm_respondent_uncalibrated"
+    return response, cached
+
+
+def run_batch(args: argparse.Namespace) -> int:
+    prompt_rows = list(iter_jsonl(args.prompt_file))
+    if args.limit is not None:
+        prompt_rows = prompt_rows[: args.limit]
+    if not prompt_rows:
+        raise ValueError("no prompt rows found; run export-prompts first")
+    provider = args.provider
+    api_key = ""
+    if provider == "anthropic":
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        if not api_key:
+            raise SystemExit("ANTHROPIC_API_KEY is not set; export it or use --provider mock for an offline run")
+    base_url = os.environ.get("ANTHROPIC_BASE_URL", ANTHROPIC_ENDPOINT)
+    cache_dir = Path(args.cache_dir) if args.cache_dir else None
+    prompt_by_persona = {str(row.get("persona_id")): row for row in prompt_rows}
+
+    responses: dict[str, dict[str, Any]] = {}
+    failures: list[dict[str, Any]] = []
+    cache_hits = 0
+
+    def task(row: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+        return run_one_task(
+            row,
+            provider=provider,
+            model=args.model,
+            temperature=args.temperature,
+            max_output_tokens=args.max_output_tokens,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=args.timeout,
+            max_retries=args.max_retries,
+            cache_dir=cache_dir,
+        )
+
+    workers = max(1, args.concurrency)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {executor.submit(task, row): row for row in prompt_rows}
+        for future in as_completed(future_map):
+            row = future_map[future]
+            persona_id = str(row.get("persona_id"))
+            try:
+                response, cached = future.result()
+                responses[persona_id] = response
+                if cached:
+                    cache_hits += 1
+            except Exception as exc:  # noqa: BLE001 - record and fall back; never abort the whole batch
+                failures.append({"persona_id": persona_id, "error": f"{type(exc).__name__}: {exc}"})
+                responses[persona_id] = {
+                    "persona_id": persona_id,
+                    "population_weight": row.get("population_weight"),
+                    "task_id": row.get("task_id"),
+                    "choice": "none_or_delay",
+                    "answer_confidence": "low",
+                    "interview_response": "",
+                    "model": args.model,
+                    "calibration_level": "synthetic_llm_respondent_uncalibrated",
+                }
+
+    output_rows = [
+        normalize_response_row(responses[str(row.get("persona_id"))], prompt_by_persona)
+        for row in prompt_rows
+        if str(row.get("persona_id")) in responses
+    ]
+    write_jsonl(args.output, output_rows)
+
+    audit = {
+        "batch_version": BATCH_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "mode": "run_batch",
+        "provider": provider,
+        "model": "mock_deterministic_engine" if provider == "mock" else args.model,
+        "temperature": (args.temperature if (provider == "anthropic" and model_accepts_temperature(args.model)) else None),
+        "concurrency": workers,
+        "prompt_count": len(prompt_rows),
+        "response_count": len(output_rows),
+        "failure_count": len(failures),
+        "failures": failures[:50],
+        "cache_hits": cache_hits,
+        "cache_dir": str(cache_dir) if cache_dir else None,
+        "coverage_rate": (len(output_rows) / len(prompt_rows)) if prompt_rows else 0.0,
+        "output": str(args.output),
+        "scientific_boundary": (
+            "Mock provider rows are deterministic offline placeholders for pipeline and test coverage, not model output."
+            if provider == "mock"
+            else "Rows are synthetic LLM respondent answers aggregated by population_weight over discrete choices; uncalibrated, not observed consumer behavior."
+        ),
+        "warnings": [] if len(output_rows) == len(prompt_rows) else ["response_count_does_not_match_prompt_count"],
+    }
+    if args.audit:
+        write_json(args.audit, audit)
+    else:
+        print(json.dumps(audit, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -390,6 +706,20 @@ def parse_args() -> argparse.Namespace:
     normalize.add_argument("response_file", type=Path)
     normalize.add_argument("--output", type=Path, required=True)
     normalize.add_argument("--audit", type=Path)
+
+    batch = subparsers.add_parser("run-batch", help="Call a live LLM (or deterministic mock) over exported prompts and write choice_results.jsonl directly.")
+    batch.add_argument("prompt_file", type=Path)
+    batch.add_argument("--output", type=Path, required=True)
+    batch.add_argument("--audit", type=Path)
+    batch.add_argument("--provider", choices=["anthropic", "mock"], default="anthropic")
+    batch.add_argument("--model", default=DEFAULT_MODEL)
+    batch.add_argument("--temperature", type=float, default=0.7)
+    batch.add_argument("--max-output-tokens", type=int, default=600)
+    batch.add_argument("--concurrency", type=int, default=4)
+    batch.add_argument("--max-retries", type=int, default=5)
+    batch.add_argument("--timeout", type=float, default=60.0)
+    batch.add_argument("--limit", type=int)
+    batch.add_argument("--cache-dir", type=Path, help="Reuse prior responses keyed by task_id; makes runs resumable and avoids re-paying.")
     return parser.parse_args()
 
 
@@ -404,6 +734,16 @@ def main() -> int:
     if args.command == "normalize-responses":
         normalize_responses(args.prompt_file, args.response_file, args.output, args.audit)
         return 0
+    if args.command == "run-batch":
+        if args.limit is not None and args.limit <= 0:
+            raise ValueError("--limit must be positive when supplied")
+        if args.concurrency <= 0:
+            raise ValueError("--concurrency must be positive")
+        if args.max_output_tokens <= 0:
+            raise ValueError("--max-output-tokens must be positive")
+        if args.max_retries < 0:
+            raise ValueError("--max-retries must be non-negative")
+        return run_batch(args)
     raise ValueError(f"unsupported command: {args.command}")
 
 
