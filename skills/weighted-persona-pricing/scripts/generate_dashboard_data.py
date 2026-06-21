@@ -15,13 +15,16 @@ import json
 import math
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from itertools import product
 from pathlib import Path
 from typing import Any, Iterable
 
 
 DASHBOARD_DATA_VERSION = "0.2.0"
-DEFAULT_PANEL_FIELDS = ["region", "sex", "education_level", "income_decile", "settlement_type", "employment_status"]
+DEFAULT_PANEL_FIELDS = ["region", "sex", "education_level", "income_decile", "settlement_type", "urban_rural", "employment_status"]
 DEFAULT_SEGMENT_PAIRS = [("region", "sex"), ("region", "income_decile"), ("income_decile", "settlement_type"), ("education_level", "income_decile")]
+DEFAULT_HTE_FAMILIES = ["price_value", "risk_trust", "category_need", "brand_feature", "channel_media", "capacity"]
+DEFAULT_HTE_PAIRS = [("price_value", "risk_trust"), ("price_value", "category_need"), ("risk_trust", "channel_media"), ("category_need", "brand_feature")]
 CHOICES = ["focal_product", "competitor", "none_or_delay"]
 
 
@@ -369,6 +372,58 @@ def build_segment_choice_cube(records: list[dict[str, Any]], fields: list[str], 
     return rows[:max_rows]
 
 
+def hte_values(record: dict[str, Any], family: str) -> list[str]:
+    choice_row = record.get("choice_row") if isinstance(record.get("choice_row"), dict) else {}
+    labels = choice_row.get("hte_labels") if isinstance(choice_row.get("hte_labels"), dict) else {}
+    values = labels.get(family, [])
+    if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, list):
+        return []
+    return [str(value) for value in values if value not in {None, ""}]
+
+
+def hte_segment_row(records: list[dict[str, Any]], families: tuple[str, ...], values: tuple[str, ...], total_weight: float, min_support: int) -> dict[str, Any]:
+    weight = sum(numeric(record.get("population_weight"), 1.0) for record in records)
+    choice = weighted_choice_shares(records)
+    return {
+        "segment": {family: value for family, value in zip(families, values)},
+        "segment_level": "x".join(families),
+        "weighted_population": weight,
+        "weighted_population_share": weight / total_weight if total_weight else 0.0,
+        "respondent_count": len(records),
+        "low_support": len(records) < min_support,
+        "choice_shares": choice["weighted_shares"],
+        "segment_source": "hte_labels",
+    }
+
+
+def build_hte_segment_choice_cube(records: list[dict[str, Any]], max_rows: int, min_support: int) -> list[dict[str, Any]]:
+    total_weight = sum(numeric(record.get("population_weight"), 1.0) for record in records)
+    overall_focal_share = weighted_choice_shares(records)["weighted_shares"].get("focal_product", 0.0)
+    specs: list[tuple[str, ...]] = [(family,) for family in DEFAULT_HTE_FAMILIES] + list(DEFAULT_HTE_PAIRS)
+    rows = []
+    for spec in specs:
+        groups: dict[tuple[str, ...], list[dict[str, Any]]] = defaultdict(list)
+        for record in records:
+            value_lists = [hte_values(record, family) for family in spec]
+            if not all(value_lists):
+                continue
+            for values in product(*value_lists):
+                groups[tuple(values)].append(record)
+        for values, group in groups.items():
+            rows.append(hte_segment_row(group, spec, values, total_weight, min_support))
+    rows.sort(
+        key=lambda row: (
+            -abs((row.get("choice_shares", {}).get("focal_product") or 0.0) - overall_focal_share),
+            -row["weighted_population"],
+            row["segment_level"],
+            json.dumps(row["segment"], sort_keys=True),
+        )
+    )
+    return rows[:max_rows]
+
+
 def build_reason_cube(records: list[dict[str, Any]], segment_cube: list[dict[str, Any]], max_segments: int, max_reasons: int) -> list[dict[str, Any]]:
     rows = []
     rows.append(
@@ -607,7 +662,9 @@ def build_dashboard_data(manifest_path: Path, max_reasons: int, max_artifacts: i
     records = load_joined_records(paths["personas_enriched"], paths["choice_results"])
     panel_fields = list((load_json(paths["personas_enriched"], {}) or {}).keys()) if False else DEFAULT_PANEL_FIELDS
     country_panel = build_country_panel(records, panel_fields)
-    segment_cube = build_segment_choice_cube(records, panel_fields, max_segments, min_segment_support)
+    hte_segment_cube = build_hte_segment_choice_cube(records, max_segments, min_segment_support)
+    hard_segment_cube = build_segment_choice_cube(records, panel_fields, max_segments, min_segment_support)
+    segment_cube = (hte_segment_cube + hard_segment_cube)[:max_segments]
 
     artifact_list = []
     for key, raw in sorted(outputs.items()):
