@@ -25,7 +25,23 @@ DEFAULT_PANEL_FIELDS = ["region", "sex", "education_level", "income_decile", "se
 DEFAULT_SEGMENT_PAIRS = [("region", "sex"), ("region", "income_decile"), ("income_decile", "settlement_type"), ("education_level", "income_decile")]
 DEFAULT_HTE_FAMILIES = ["price_value", "risk_trust", "category_need", "brand_feature", "channel_media", "capacity"]
 DEFAULT_HTE_PAIRS = [("price_value", "risk_trust"), ("price_value", "category_need"), ("risk_trust", "channel_media"), ("category_need", "brand_feature")]
+HTE_SEGMENT_FIELDS = set(DEFAULT_HTE_FAMILIES) | {"decision_role", "evidence", "friction", "population"}
 CHOICES = ["focal_product", "competitor", "none_or_delay"]
+ATTRIBUTE_RULES = {
+    "battery_score": {"label": "续航表现", "higher_is_better": True, "message": "长续航和稳定佩戴"},
+    "feature_score": {"label": "综合功能", "higher_is_better": True, "message": "运动健康功能完整"},
+    "brand_strength": {"label": "品牌信任", "higher_is_better": True, "message": "品牌可信度"},
+    "payment_score": {"label": "移动支付", "higher_is_better": True, "message": "支付和生态便利"},
+    "warranty_score": {"label": "保障感", "higher_is_better": True, "message": "售后和保障"},
+    "price_index": {"label": "价格压力", "higher_is_better": False, "message": "入手门槛"},
+    "risk_score": {"label": "感知风险", "higher_is_better": False, "message": "低风险选择"},
+}
+CHANNEL_RULES = {
+    "urban_online_research": {"label": "城市线上搜索/评测", "reach": 0.78, "cost_index": 1.0, "play": "搜索词、评测对比页、电商详情页"},
+    "town_rural_value_research": {"label": "城镇/乡村性价比研究", "reach": 0.66, "cost_index": 0.72, "play": "门店导购、短视频讲解、本地电商促销"},
+    "samsung_android_ecosystem": {"label": "三星/安卓生态触点", "reach": 0.61, "cost_index": 1.08, "play": "安卓用户再营销、生态兼容对比、换购页"},
+    "ios_user": {"label": "苹果手机用户触点", "reach": 0.54, "cost_index": 1.16, "play": "跨平台兼容说明、社媒种草、评测博主"},
+}
 
 
 def load_json(path: Path, default: Any = None) -> Any:
@@ -383,6 +399,17 @@ def hte_values(record: dict[str, Any], family: str) -> list[str]:
     return [str(value) for value in values if value not in {None, ""}]
 
 
+def record_matches_segment(record: dict[str, Any], segment: dict[str, Any]) -> bool:
+    for field, raw_value in segment.items():
+        value = str(raw_value)
+        if field in HTE_SEGMENT_FIELDS:
+            if value not in hte_values(record, field):
+                return False
+        elif hard_value(record.get("persona", {}), field) != value:
+            return False
+    return True
+
+
 def hte_segment_row(records: list[dict[str, Any]], families: tuple[str, ...], values: tuple[str, ...], total_weight: float, min_support: int) -> dict[str, Any]:
     weight = sum(numeric(record.get("population_weight"), 1.0) for record in records)
     choice = weighted_choice_shares(records)
@@ -424,6 +451,187 @@ def build_hte_segment_choice_cube(records: list[dict[str, Any]], max_rows: int, 
     return rows[:max_rows]
 
 
+def weighted_list_counts(records: list[dict[str, Any]], values_fn, max_items: int) -> list[dict[str, Any]]:
+    counts: dict[str, float] = defaultdict(float)
+    raw_counts: Counter[str] = Counter()
+    for record in records:
+        weight = numeric(record.get("population_weight"), 1.0)
+        for value in values_fn(record):
+            label = str(value)
+            counts[label] += weight
+            raw_counts[label] += 1
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:max_items]
+    return [{"label": label, "weighted_count": value, "row_count": raw_counts[label]} for label, value in ordered]
+
+
+def product_sell_point_comparison(product: dict[str, Any]) -> list[dict[str, Any]]:
+    alternatives = product.get("alternatives", []) if isinstance(product.get("alternatives"), list) else []
+    commercial = [item for item in alternatives if isinstance(item, dict) and not item.get("is_outside_option")]
+    if len(commercial) < 2:
+        return []
+    focal, competitor = commercial[0], commercial[1]
+    focal_attrs = focal.get("normalized_attributes", {}) if isinstance(focal.get("normalized_attributes"), dict) else {}
+    competitor_attrs = competitor.get("normalized_attributes", {}) if isinstance(competitor.get("normalized_attributes"), dict) else {}
+    rows = []
+    for key in sorted(set(focal_attrs) | set(competitor_attrs)):
+        if key not in ATTRIBUTE_RULES:
+            continue
+        rule = ATTRIBUTE_RULES[key]
+        focal_value = numeric(focal_attrs.get(key), math.nan)
+        competitor_value = numeric(competitor_attrs.get(key), math.nan)
+        if math.isnan(focal_value) or math.isnan(competitor_value):
+            continue
+        raw_delta = focal_value - competitor_value
+        oriented_delta = raw_delta if rule["higher_is_better"] else -raw_delta
+        if oriented_delta > 0.04:
+            leader = "focal_product"
+        elif oriented_delta < -0.04:
+            leader = "competitor"
+        else:
+            leader = "parity"
+        rows.append(
+            {
+                "attribute": key,
+                "label": rule["label"],
+                "message": rule["message"],
+                "focal_value": focal_value,
+                "competitor_value": competitor_value,
+                "advantage": oriented_delta,
+                "leader": leader,
+            }
+        )
+    focal_price = numeric(focal.get("price"), math.nan)
+    competitor_price = numeric(competitor.get("price"), math.nan)
+    if not math.isnan(focal_price) and not math.isnan(competitor_price) and competitor_price:
+        gap = focal_price - competitor_price
+        rows.append(
+            {
+                "attribute": "price_gap",
+                "label": "实际价差",
+                "message": "购买门槛",
+                "focal_value": focal_price,
+                "competitor_value": competitor_price,
+                "advantage": -gap / competitor_price,
+                "leader": "focal_product" if gap < 0 else "competitor" if gap > 0 else "parity",
+            }
+        )
+    rows.sort(key=lambda row: (row["leader"] != "focal_product", -abs(row["advantage"]), row["attribute"]))
+    return rows
+
+
+def first_channel(channel_counts: list[dict[str, Any]]) -> dict[str, Any]:
+    for item in channel_counts:
+        rule = CHANNEL_RULES.get(item["label"])
+        if rule:
+            return {"code": item["label"], **rule, "weighted_count": item["weighted_count"], "row_count": item["row_count"]}
+    if channel_counts:
+        item = channel_counts[0]
+        return {"code": item["label"], "label": item["label"], "reach": 0.5, "cost_index": 1.0, "play": "通用触达", "weighted_count": item["weighted_count"], "row_count": item["row_count"]}
+    return {"code": "general", "label": "通用触达", "reach": 0.45, "cost_index": 1.0, "play": "电商详情页和门店导购", "weighted_count": 0.0, "row_count": 0}
+
+
+def message_for_segment(segment: dict[str, Any], drivers: list[dict[str, Any]], barriers: list[dict[str, Any]], sell_points: list[dict[str, Any]]) -> dict[str, Any]:
+    labels = set(str(value) for value in segment.values())
+    labels.update(item["label"] for item in drivers[:4])
+    labels.update(item["label"] for item in barriers[:4])
+    focal_edges = [row for row in sell_points if row.get("leader") == "focal_product"]
+    proof_points = [row["label"] for row in focal_edges[:3]]
+    if {"battery_led", "battery_reliability_priority", "battery_life"} & labels:
+        message = "主打长续航：少充电、持续健康记录，解释为什么比低价竞品更省心。"
+    elif {"health_led", "health_tracking_high", "health_tracking"} & labels:
+        message = "主打健康管理：日常监测、睡眠和运动记录，把手表说成家庭健康提醒工具。"
+    elif {"fitness_outdoor_high", "fitness_tracking"} & labels:
+        message = "主打运动户外：轻量佩戴、训练记录和长续航，强调连续运动场景。"
+    elif {"ios_user", "ios_compatibility_priority"} & labels:
+        message = "主打跨手机兼容：弱化生态顾虑，强调苹果用户也能获得核心健康和续航价值。"
+    elif {"below_huawei_price_ceiling", "above_comfort_budget", "higher_price", "high_price_sensitivity"} & labels:
+        message = "主打价值解释和促销门槛：用续航/健康证明溢价，同时给出限时优惠或分期。"
+    elif {"samsung_brand_trust_advantage", "samsung_brand_trust"} & labels:
+        message = "先承认三星品牌安全感，再用华为续航和健康功能做差异化反击。"
+    else:
+        message = "主打综合价值：续航、健康和价格门槛一起讲，避免单点卖点不足。"
+    return {"primary_message": message, "proof_points": proof_points}
+
+
+def activation_fit_score(segment: dict[str, Any], drivers: list[dict[str, Any]], barriers: list[dict[str, Any]], sell_points: list[dict[str, Any]]) -> float:
+    labels = set(str(value) for value in segment.values())
+    labels.update(item["label"] for item in drivers[:5])
+    labels.update(item["label"] for item in barriers[:5])
+    score = 0.34
+    if {"battery_led", "battery_reliability_priority", "battery_life"} & labels and any(row.get("attribute") == "battery_score" and row.get("leader") == "focal_product" for row in sell_points):
+        score += 0.18
+    if {"health_led", "health_tracking_high", "fitness_outdoor_high", "health_tracking", "fitness_tracking"} & labels and any(row.get("attribute") == "feature_score" and row.get("leader") == "focal_product" for row in sell_points):
+        score += 0.14
+    if {"huawei_brand_open", "ios_compatibility_priority", "ios_user"} & labels:
+        score += 0.08
+    if {"below_huawei_price_ceiling", "above_comfort_budget", "higher_price", "high_price_sensitivity"} & labels:
+        score -= 0.12
+    if {"payment_friction_if_no_google_pay", "missing_google_pay", "google_pay_trust"} & labels:
+        score -= 0.08
+    return max(0.12, min(0.82, score))
+
+
+def build_sales_activation(records: list[dict[str, Any]], product: dict[str, Any], segment_cube: list[dict[str, Any]], max_rows: int = 12) -> dict[str, Any]:
+    total_weight = sum(numeric(record.get("population_weight"), 1.0) for record in records)
+    sell_points = product_sell_point_comparison(product)
+    overall_focal_share = weighted_choice_shares(records)["weighted_shares"].get("focal_product", 0.0)
+    candidates = [
+        segment
+        for segment in segment_cube
+        if segment.get("segment_source") == "hte_labels" and not segment.get("low_support") and isinstance(segment.get("segment"), dict)
+    ]
+    combo_candidates = [segment for segment in candidates if len(segment.get("segment", {})) >= 2]
+    if combo_candidates:
+        candidates = combo_candidates
+    candidates.sort(key=lambda row: (-len(row.get("segment", {})), -(row.get("weighted_population_share") or 0.0), abs((row.get("choice_shares", {}).get("focal_product") or 0.0) - overall_focal_share)))
+    rows = []
+    for segment in candidates[: max_rows * 2]:
+        group = [record for record in records if record_matches_segment(record, segment["segment"])]
+        if not group:
+            continue
+        channel_counts = weighted_list_counts(group, lambda record: hte_values(record, "channel_media"), 4)
+        driver_counts = weighted_reason_counts_from_records(group, "main_drivers", 6)
+        barrier_counts = weighted_reason_counts_from_records(group, "main_barriers", 6)
+        channel = first_channel(channel_counts)
+        message = message_for_segment(segment["segment"], driver_counts, barrier_counts, sell_points)
+        fit = activation_fit_score(segment["segment"], driver_counts, barrier_counts, sell_points)
+        baseline = numeric(segment.get("choice_shares", {}).get("focal_product"), 0.0)
+        convertible_space = max(0.0, 1.0 - baseline)
+        estimated_lift = min(0.22, convertible_space * (0.035 + 0.16 * fit + 0.06 * channel["reach"]))
+        post_message_probability = min(0.92, baseline + estimated_lift)
+        incremental_buyers_per_100k = (segment.get("weighted_population_share") or 0.0) * estimated_lift * 100000
+        roi_index = (estimated_lift * 100) / max(channel["cost_index"], 0.2)
+        rows.append(
+            {
+                "segment": segment["segment"],
+                "segment_level": segment.get("segment_level"),
+                "weighted_population_share": segment.get("weighted_population_share"),
+                "weighted_population": segment.get("weighted_population"),
+                "respondent_count": segment.get("respondent_count"),
+                "baseline_purchase_probability": baseline,
+                "post_message_purchase_probability": post_message_probability,
+                "estimated_lift": estimated_lift,
+                "incremental_buyers_per_100k": incremental_buyers_per_100k,
+                "roi_index": roi_index,
+                "channel": channel,
+                "top_channels": channel_counts,
+                "top_drivers": driver_counts,
+                "top_barriers": barrier_counts,
+                "value_delivery": message,
+                "message_fit_score": fit,
+            }
+        )
+        if len(rows) >= max_rows:
+            break
+    rows.sort(key=lambda row: (-row["incremental_buyers_per_100k"], -row["roi_index"]))
+    return {
+        "sell_point_comparison": sell_points,
+        "activation_plan": rows,
+        "method_note": "传递后效果是基于合成选择、卖点匹配、渠道可触达和可转换空间的方向性估算；不是真实媒体归因 ROI。",
+        "roi_definition": "ROI 指数 = 预计购买率提升百分点 / 渠道成本指数；新增购买人数按每 10 万目标人群归一化。",
+    }
+
+
 def build_reason_cube(records: list[dict[str, Any]], segment_cube: list[dict[str, Any]], max_segments: int, max_reasons: int) -> list[dict[str, Any]]:
     rows = []
     rows.append(
@@ -436,9 +644,7 @@ def build_reason_cube(records: list[dict[str, Any]], segment_cube: list[dict[str
         }
     )
     for segment in segment_cube[:max_segments]:
-        segment_fields = tuple(segment["segment"].keys())
-        segment_values = tuple(segment["segment"].values())
-        segment_records = [record for record in records if segment_group_key(record, segment_fields) == segment_values]
+        segment_records = [record for record in records if record_matches_segment(record, segment["segment"])]
         for choice in sorted(set(record["choice"] for record in segment_records)):
             choice_records = [record for record in segment_records if record["choice"] == choice]
             if not choice_records:
@@ -665,6 +871,7 @@ def build_dashboard_data(manifest_path: Path, max_reasons: int, max_artifacts: i
     hte_segment_cube = build_hte_segment_choice_cube(records, max_segments, min_segment_support)
     hard_segment_cube = build_segment_choice_cube(records, panel_fields, max_segments, min_segment_support)
     segment_cube = (hte_segment_cube + hard_segment_cube)[:max_segments]
+    product = product_summary(artifacts.get("normalized_choice_scenario") or {})
 
     artifact_list = []
     for key, raw in sorted(outputs.items()):
@@ -689,7 +896,8 @@ def build_dashboard_data(manifest_path: Path, max_reasons: int, max_artifacts: i
         "segment_choice_cube": segment_cube,
         "reason_cube": build_reason_cube(records, segment_cube, max_reason_segments, max_reasons),
         "sample_layers": build_sample_layers(records, medium_sample_size, deep_sample_size),
-        "product_scenario": product_summary(artifacts.get("normalized_choice_scenario") or {}),
+        "product_scenario": product,
+        "sales_activation": build_sales_activation(records, product, segment_cube),
         "results": {"record_count": choice_model.get("record_count") or validation.get("record_count") or len(records), "total_weight": total_weight, "choice_shares": choice_rows(choice_model, bootstrap), "confidence_counts": validation.get("answer_confidence_counts", {}), "top_drivers": weighted_reason_counts(paths["choice_results"], "main_drivers", max_reasons), "top_barriers": weighted_reason_counts(paths["choice_results"], "main_barriers", max_reasons)},
         "quality": {"cards": build_quality_cards(artifacts), "llm_risk_summary": risk_summary(llm_quality), "choice_validation": validation, "pipeline_artifact_validation": artifacts.get("pipeline_artifact_validation") or {}},
         "artifacts": artifact_list,
