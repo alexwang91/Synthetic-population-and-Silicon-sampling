@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/synthetic-population/choice_results.schema.json",
+  "title": "Choice result row",
+  "description": "One weighted discrete choice row produced by a deterministic baseline, normalized external LLM response, or live LLM batch run.",
+  "type": "object",
+  "required": [
+    "persona_id",
+    "population_weight",
+    "choice",
+    "interview_response",
+    "main_drivers",
+    "main_barriers",
+    "switch_conditions",
+    "answer_confidence",
+    "isolation",
+    "generation_controls",
+    "quality_controls"
+  ],
+  "properties": {
+    "persona_id": {"type": "string", "minLength": 1},
+    "population_weight": {"type": "number", "exclusiveMinimum": 0},
+    "choice": {"type": "string", "enum": ["focal_product", "competitor", "none_or_delay"]},
+    "chosen_alternative_id": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+    "chosen_alternative_name": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+    "interview_response": {"type": "string"},
+    "main_drivers": {"type": "array", "items": {"type": "string"}},
+    "main_barriers": {"type": "array", "items": {"type": "string"}},
+    "switch_conditions": {"type": "array", "items": {"type": "string"}},
+    "answer_confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+    "isolation": {
+      "type": "object",
+      "required": ["context_scope", "saw_other_answers", "saw_aggregate_results", "saw_target_proportion"],
+      "properties": {
+        "context_scope": {"type": "string", "enum": ["single_persona"]},
+        "saw_other_answers": {"type": "boolean", "enum": [false]},
+        "saw_aggregate_results": {"type": "boolean", "enum": [false]},
+        "saw_target_proportion": {"type": "boolean", "enum": [false]}
+      },
+      "additionalProperties": true
+    },
+    "generation_controls": {
+      "type": "object",
+      "required": ["method", "model", "seed"],
+      "properties": {
+        "method": {"type": "string", "minLength": 1},
+        "model": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "seed": {"type": "string", "minLength": 1},
+        "temperature": {"anyOf": [{"type": "number"}, {"type": "null"}]},
+        "prompt_version": {"type": "string"},
+        "prompt_variant": {"type": "string"},
+        "order_policy": {"type": "string"},
+        "task_id": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "quality_controls": {
+      "type": "object",
+      "required": ["llm_generated", "score_only", "discrete_choice_record", "probabilities_are_diagnostics_only", "calibration_level"],
+      "properties": {
+        "llm_generated": {"type": "boolean"},
+        "score_only": {"type": "boolean", "enum": [false]},
+        "discrete_choice_record": {"type": "boolean", "enum": [true]},
+        "probabilities_are_diagnostics_only": {"type": "boolean"},
+        "calibration_level": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "diagnostics": {"type": "object"},
+    "choice_reason_codes": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
