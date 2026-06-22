@@ -39,6 +39,7 @@ FAST_CHECKS = [
     Check("llm_choice_interviews", [sys.executable, "tests/test_run_llm_choice_interviews.py"]),
     Check("llm_choice_batch", [sys.executable, "tests/test_run_llm_choice_batch.py"]),
     Check("llm_batch_audit_gate", [sys.executable, "tests/test_validate_llm_batch_audit.py"]),
+    Check("llm_choice_cache_contract", [sys.executable, "tests/test_llm_choice_cache_contract.py"]),
     Check("llm_choice_quality", [sys.executable, "tests/test_validate_llm_choice_quality.py"]),
     Check("dashboard_data", [sys.executable, "tests/test_generate_dashboard_data.py"]),
     Check("dashboard_html", [sys.executable, "tests/test_generate_dashboard_html.py"]),
