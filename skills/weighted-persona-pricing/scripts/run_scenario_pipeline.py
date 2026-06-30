@@ -28,11 +28,8 @@ def manifest(run_id:str,run_dir:Path,inputs:dict[str,Any],outputs:dict[str,Path]
     m={'run_id':run_id,'status':status,'pipeline_version':VERSION,'created_at':steps[0]['started_at'] if steps else datetime.now(timezone.utc).isoformat(),'method':method,'interview_engine':engine,'inputs':inputs,'outputs':{k:str(v) for k,v in outputs.items()},'steps':steps,'scientific_boundary':boundary}
     write_json(run_dir/'manifest.json',m); return m
 
-def media_boundary():
-    return {'pipeline_changes_model_outputs':False,'choice_model_calibration_level':'uncalibrated_media_planning_simulation','original_plan_alignment':'minimal brief to channel plan, simulation, budget allocation, dashboard','report_policy':'aggregate decision report','token_policy':'offline default','acceptance_policy':'aggregate artifacts in run folder','llm_risk_controls':['none_by_default'],'limitations':['planning estimates, not observed campaign data']}
-def legacy_boundary():
-    return {'pipeline_changes_model_outputs':False,'choice_model_calibration_level':'uncalibrated_rule_based_baseline','original_plan_alignment':'representative weighted respondents each produce a discrete choice','report_policy':'aggregate report only','token_policy':'offline deterministic smoke path','acceptance_policy':'manifest and core aggregate artifacts must exist','llm_risk_controls':['baseline'],'limitations':['synthetic hypotheses only']}
-
+def media_boundary(): return {'pipeline_changes_model_outputs':False,'choice_model_calibration_level':'uncalibrated_media_planning_simulation','original_plan_alignment':'minimal brief to channel plan, simulation, budget allocation, dashboard','report_policy':'aggregate decision report','token_policy':'offline default','acceptance_policy':'aggregate artifacts in run folder','llm_risk_controls':['none_by_default'],'limitations':['planning estimates, not observed campaign data']}
+def legacy_boundary(): return {'pipeline_changes_model_outputs':False,'choice_model_calibration_level':'uncalibrated_rule_based_baseline','original_plan_alignment':'representative weighted respondents each produce a discrete choice','report_policy':'aggregate report only','token_policy':'offline deterministic smoke path','acceptance_policy':'manifest and core aggregate artifacts must exist','llm_risk_controls':['baseline'],'limitations':['synthetic hypotheses only']}
 def media_outputs(d:Path)->dict[str,Path]: return {'scenario_brief':d/'scenario_brief.json','channel_plan':d/'channel_plan.json','channel_simulation_results':d/'channel_simulation_results.json','budget_allocation':d/'budget_allocation.json','dashboard_data':d/'dashboard_data.json','market_report_md':d/'market_report.md','market_report_json':d/'market_report.json'}
 def legacy_outputs(d:Path,engine:str)->dict[str,Path]:
     o={'seed_cells':d/'seed_cells.jsonl','weighted_cells':d/'weighted_cells.jsonl',PCORE:d/('per'+'sonas_core.jsonl'),PENR:d/('per'+'sonas_enriched.jsonl'),'normalized_choice_scenario':d/'normalized_choice_scenario.json',ANS:d/('choice'+'_results.jsonl'),'ipf_audit':d/'ipf_audit.json',PAUD:d/('per'+'sona_sampling_audit.json'),'soft_trait_audit':d/'soft_trait_audit.json',PCOH:d/('per'+'sona_coherence_audit.json'),'product_scenario_audit':d/'product_scenario_audit.json','choice_model_audit':d/'choice_model_audit.json','choice_interview_validation':d/'choice_interview_validation.json','bootstrap_intervals':d/'bootstrap_intervals.json','market_report_md':d/'market_report.md','market_report_json':d/'market_report.json','dashboard_data':d/'dashboard_data.json','dashboard_html':d/'dashboard.html','pipeline_artifact_validation':d/'pipeline_artifact_validation.json'}
@@ -87,13 +84,14 @@ def run_legacy(args)->dict[str,Any]:
         if m: return m
     panel,answers,shares=legacy_material(cfg,o); legacy_audits(cfg,o,shares,len(answers))
     if eng=='llm_short_all':
+        o[ANS].unlink(missing_ok=True)
         limit=int(cfg.get('llm_prompt_limit',len(panel))); write_jsonl(o['llm_choice_prompts'],[{PID:r[PID],'prompt':'offline prompt export'} for r in panel[:limit]]); write_json(o['llm_choice_prompt_audit'],{'prompt_count':limit,'prompt_version':'compat_export','order_policy':cfg.get('llm_order_policy','rotate')}); steps.append(step('export_llm_choice_prompts','export prompts')); return manifest(rid,d,cfg,o,steps,'awaiting_llm_responses',LEGACY,eng,legacy_boundary())
     for name in ['run_choice_model','validate_choice_interviews','bootstrap_choice_intervals']:
         steps.append(step(name,'legacy compatibility stage')); m=stop_if(name,args.stop_after,rid,d,cfg,o,steps)
         if m: return m
     legacy_report(cfg,o,shares); steps.append(step('generate_market_report','write report')); manifest(rid,d,cfg,o,steps,'running',LEGACY,eng,legacy_boundary())
     steps.append(run([sys.executable,str(srel('skills/weighted-persona-pricing/scripts/generate_dashboard_data.py')),str(d/'manifest.json'),'--output',str(o['dashboard_data'])],'generate_dashboard_data'))
-    data=json.dumps(load_json(o['dashboard_data']),ensure_ascii=False).replace('</','<\\/'); o['dashboard_html'].write_text(f'<!doctype html><script>window.DASHBOARD_DATA={data};</script><p>dashboard_data.json</p>\n',encoding='utf-8'); steps.append(step('generate_dashboard_html','write html'))
+    data=json.dumps(load_json(o['dashboard_data']),ensure_ascii=False).replace('</','<\/'); o['dashboard_html'].write_text(f'<!doctype html><script>window.DASHBOARD_DATA={data};</script><p>dashboard_data.json</p>\n',encoding='utf-8'); steps.append(step('generate_dashboard_html','write html'))
     write_json(o['pipeline_artifact_validation'],{'passes_pipeline_artifact_validation':True,'error_count':0,'warning_count':0,'report_length_policy':'disabled'}); steps.append(step('validate_pipeline_artifacts','write audit'))
     return manifest(rid,d,cfg,o,steps,'passed',LEGACY,eng,legacy_boundary())
 
