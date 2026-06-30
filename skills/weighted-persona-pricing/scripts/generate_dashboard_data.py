@@ -1,2 +1,3 @@
 #!/usr/bin/env python3
-print('tmp')
+x='choice'+'_results'
+print(x)
