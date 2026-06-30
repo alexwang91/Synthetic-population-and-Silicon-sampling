@@ -1,3 +1,3 @@
 #!/usr/bin/env python3
-x='choice'+'_results'
+x='per'+'sona'
 print(x)
