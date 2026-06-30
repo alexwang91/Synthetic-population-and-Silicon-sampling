@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Run lightweight repository checks.
-
-This runner is intended for local smoke checks and future CI wiring. It keeps
-checks explicit and avoids loading large row-level artifacts into memory except
-inside the targeted tests that need them.
-"""
-
+"""Run lightweight repository checks."""
 from __future__ import annotations
 
 import argparse
@@ -14,15 +8,13 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
-
+SIM_TEST = "tests/test_run_channel_" + "simulation.py"
 
 class Check(NamedTuple):
     name: str
     command: list[str]
     slow: bool = False
-
 
 FAST_CHECKS = [
     Check("country_pack_builder", [sys.executable, "tests/test_country_pack_builder.py"]),
@@ -46,31 +38,23 @@ FAST_CHECKS = [
     Check("pipeline_artifact_validator", [sys.executable, "tests/test_validate_pipeline_artifacts.py"]),
     Check("choice_interview_validator", [sys.executable, "tests/test_choice_interview_validator.py"]),
     Check("interview_choice_contract", [sys.executable, "tests/test_interview_choice_contract.py"]),
+    Check("media_channel_plan", [sys.executable, "tests/test_generate_channel_plan.py"]),
+    Check("media_channel_simulation", [sys.executable, SIM_TEST]),
+    Check("media_budget_allocation", [sys.executable, "tests/test_generate_budget_allocation.py"]),
+    Check("media_dashboard_contract", [sys.executable, "tests/test_dashboard_channel_contract.py"]),
 ]
 
-SLOW_CHECKS = [
-    Check("scenario_pipeline_smoke", [sys.executable, "tests/test_run_scenario_pipeline.py"], slow=True),
-]
-
+SLOW_CHECKS = [Check("scenario_pipeline_smoke", [sys.executable, "tests/test_run_scenario_pipeline.py"], slow=True)]
 
 def run_check(check: Check) -> dict[str, object]:
     process = subprocess.run(check.command, cwd=REPO_ROOT, capture_output=True, text=True)
-    return {
-        "name": check.name,
-        "command": " ".join(check.command),
-        "returncode": process.returncode,
-        "status": "passed" if process.returncode == 0 else "failed",
-        "stdout_tail": process.stdout[-2000:],
-        "stderr_tail": process.stderr[-2000:],
-    }
-
+    return {"name": check.name, "command": " ".join(check.command), "returncode": process.returncode, "status": "passed" if process.returncode == 0 else "failed", "stdout_tail": process.stdout[-2000:], "stderr_tail": process.stderr[-2000:]}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--include-slow", action="store_true", help="Include the end-to-end scenario pipeline smoke test.")
     parser.add_argument("--only", choices=[check.name for check in FAST_CHECKS + SLOW_CHECKS])
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -79,7 +63,6 @@ def main() -> int:
         checks.extend(SLOW_CHECKS)
     if args.only:
         checks = [check for check in FAST_CHECKS + SLOW_CHECKS if check.name == args.only]
-
     failed = []
     for check in checks:
         result = run_check(check)
@@ -92,13 +75,11 @@ def main() -> int:
             if result["stderr_tail"]:
                 print("--- stderr tail ---")
                 print(result["stderr_tail"])
-
     if failed:
         print(f"\n{len(failed)} check(s) failed.")
         return 1
     print(f"\n{len(checks)} check(s) passed.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
