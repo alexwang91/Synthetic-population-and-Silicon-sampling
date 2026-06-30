@@ -1,3 +1,3 @@
 #!/usr/bin/env python3
-x='per'+'sona'
+x='s'+'ex'
 print(x)
