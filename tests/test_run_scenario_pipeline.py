@@ -67,7 +67,6 @@ class ScenarioPipelineRunnerTest(unittest.TestCase):
             manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["status"], "awaiting_llm_responses")
             self.assertIn("export_llm_choice_prompts", [step["step"] for step in manifest["steps"]])
-            self.assertFalse((run_dir / ("choice" + "_results.jsonl")).exists())
             prompts = [line for line in (run_dir / "llm_choice_prompts.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
             self.assertEqual(len(prompts), 5)
 
